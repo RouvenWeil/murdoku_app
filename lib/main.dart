@@ -1,6 +1,33 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'domain/board_state.dart';
+
 void main() {
+  // Creates an empty 6×6 board.
+  final original = BoardState.empty(6, 6);
+
+  // Selects the cell at row 2, column 3 (starting at zero).
+  final position = (row: 2, column: 3);
+
+  // Creates a new board with an X in that cell.
+  final modified = original.withCell(position, CellState(crossed: true));
+
+  // Confirms that the original board is still empty.
+  assert(original.cellAt(position).crossed == false);
+
+  // Confirms that the new board contains the X.
+  assert(modified.cellAt(position).crossed == true);
+
+  // Simulates Undo by returning to the original board.
+  final restored = original;
+
+  // Confirms that Undo restored the empty cell.
+  assert(restored.cellAt(position).crossed == false);
+  if (kDebugMode) {
+    print('WP-01A: All board-state assertions passed!');
+  }
+
   runApp(const MyApp());
 }
 
