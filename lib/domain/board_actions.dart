@@ -23,3 +23,35 @@ BoardState toggleCross(BoardState board, CellPosition position) {
   // Return the new board without modifying the original.
   return board.withCell(position, newCell);
 }
+
+// Adds or removes one character note in a cell.
+BoardState toggleNote(
+  BoardState board,
+  CellPosition position,
+  String characterId,
+) {
+  // Read the cell and validate its coordinates.
+  final oldCell = board.cellAt(position);
+
+  // Notes cannot be added to crossed or occupied cells.
+  if (oldCell.crossed || oldCell.characterId != null) {
+    return board;
+  }
+
+  // Copy existing notes so the original stays unchanged.
+  final newNotes = Set<String>.of(oldCell.notes);
+
+  // Remove the note if it already exists.
+  if (newNotes.contains(characterId)) {
+    newNotes.remove(characterId);
+  } else {
+    // Otherwise, add the note alongside existing notes.
+    newNotes.add(characterId);
+  }
+
+  // Create a new cell containing the updated notes.
+  final newCell = CellState(notes: newNotes);
+
+  // Return a new board containing the modified cell.
+  return board.withCell(position, newCell);
+}
