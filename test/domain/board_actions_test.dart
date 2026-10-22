@@ -228,4 +228,241 @@ void main() {
       expect(original.cellAt(notePosition).isEmpty, isTrue);
     });
   });
+
+  group('PlaceCharacter', () {
+    // Checks placement and automatic row/column crosses.
+    test('Places a character and generates crosses', () {
+      final board = BoardState.empty(6, 6);
+      final position = (row: 2, column: 3);
+
+      final updated = placeCharacter(board, position, 'suspectA');
+
+      expect(updated.cellAt(position).characterId, 'suspectA');
+
+      // Other cells in the same row or column are crossed.
+      expect(updated.cellAt((row: 2, column: 0)).crossed, isTrue);
+      expect(updated.cellAt((row: 5, column: 3)).crossed, isTrue);
+
+      // Unrelated cells remain empty.
+      expect(updated.cellAt((row: 0, column: 0)).isEmpty, isTrue);
+
+      // The original board remains unchanged.
+      expect(board.cellAt(position).isEmpty, isTrue);
+    });
+
+    // Checks that character placement overwrites notes.
+    test('Placement overwrites target notes', () {
+      final position = (row: 2, column: 3);
+      final board = toggleNote(BoardState.empty(6, 6), position, 'suspectB');
+
+      final updated = placeCharacter(board, position, 'suspectA');
+
+      expect(updated.cellAt(position).characterId, 'suspectA');
+      expect(updated.cellAt(position).notes, isEmpty);
+      expect(board.cellAt(position).notes, {'suspectB'});
+    });
+
+    // Checks that characters cannot be placed on crosses.
+    test('Rejects placement on a cross', () {
+      final position = (row: 2, column: 3);
+      final crossed = toggleCross(BoardState.empty(6, 6), position);
+
+      final updated = placeCharacter(crossed, position, 'suspectA');
+
+      expect(identical(updated, crossed), isTrue);
+    });
+
+    // Checks that a character cannot be placed twice.
+    test('Rejects duplicate character placement', () {
+      final position = (row: 2, column: 3);
+      final board = placeCharacter(
+        BoardState.empty(6, 6),
+        position,
+        'suspectA',
+      );
+
+      final updated = placeCharacter(board, (row: 0, column: 0), 'suspectA');
+
+      expect(identical(updated, board), isTrue);
+    });
+
+    // Checks that two characters can share a row after clearing an X.
+    test('Preserves existing characters in the same row', () {
+      final firstPosition = (row: 2, column: 1);
+      final secondPosition = (row: 2, column: 4);
+
+      final first = placeCharacter(
+        BoardState.empty(6, 6),
+        firstPosition,
+        'suspectA',
+      );
+
+      // Manually remove the generated X blocking the second cell.
+      final cleared = toggleCross(first, secondPosition);
+
+      final second = placeCharacter(cleared, secondPosition, 'suspectB');
+
+      expect(second.cellAt(firstPosition).characterId, 'suspectA');
+      expect(second.cellAt(secondPosition).characterId, 'suspectB');
+    });
+
+    // Checks that invalid positions are rejected.
+    test('Rejects invalid coordinates', () {
+      final board = BoardState.empty(6, 6);
+
+      expect(
+        () => placeCharacter(board, (row: -1, column: 0), 'suspectA'),
+        throwsRangeError,
+      );
+
+      expect(
+        () => placeCharacter(board, (row: 6, column: 0), 'suspectA'),
+        throwsRangeError,
+      );
+    });
+  });
+
+  group('PlaceCharacter interactions', () {
+    // Checks that placement overwrites notes only where required.
+    test('Character replaces target, row and column notes', () {
+      final original = BoardState.empty(6, 6);
+      final target = (row: 2, column: 3);
+
+      // Add notes to the target, its row, its column and elsewhere.
+      var board = toggleNote(original, target, 'suspectB');
+      board = toggleNote(board, (row: 2, column: 0), 'suspectC');
+      board = toggleNote(board, (row: 0, column: 3), 'suspectD');
+      board = toggleNote(board, (row: 0, column: 0), 'suspectE');
+
+      // Place a character on the noted target.
+      final placed = placeCharacter(board, target, 'suspectA');
+
+      // The target becomes a character without notes.
+      expect(placed.cellAt(target).characterId, 'suspectA');
+      expect(placed.cellAt(target).notes, isEmpty);
+
+      // Notes in the same row and column become crosses.
+      expect(placed.cellAt((row: 2, column: 0)).crossed, isTrue);
+      expect(placed.cellAt((row: 2, column: 0)).notes, isEmpty);
+      expect(placed.cellAt((row: 0, column: 3)).crossed, isTrue);
+      expect(placed.cellAt((row: 0, column: 3)).notes, isEmpty);
+
+      // Unrelated notes must remain unchanged.
+      expect(placed.cellAt((row: 0, column: 0)).notes, {'suspectE'});
+
+      // The previous board retains its markings.
+      expect(board.cellAt(target).notes, {'suspectB'});
+      expect(original.cellAt(target).isEmpty, isTrue);
+    });
+
+    // Checks that automatic crosses never toggle existing crosses off.
+    test('Character placement preserves existing crosses', () {
+      final original = BoardState.empty(6, 6);
+      final existingCross = (row: 2, column: 4);
+
+      // Add a manual cross before placing the character.
+      final crossed = toggleCross(original, existingCross);
+      final placed = placeCharacter(crossed, (row: 2, column: 2), 'suspectA');
+
+      // The existing cross must still be present.
+      expect(placed.cellAt(existingCross).crossed, isTrue);
+
+      // Other eligible cells must also become crossed.
+      expect(placed.cellAt((row: 2, column: 0)).crossed, isTrue);
+      expect(placed.cellAt((row: 0, column: 2)).crossed, isTrue);
+    });
+
+    // Checks that crosses and notes cannot overwrite characters.
+    test('Existing character blocks ToggleCross and ToggleNote', () {
+      final position = (row: 2, column: 3);
+      final placed = placeCharacter(
+        BoardState.empty(6, 6),
+        position,
+        'suspectA',
+      );
+
+      // Attempt both marking actions on the occupied cell.
+      final crossed = toggleCross(placed, position);
+      final noted = toggleNote(placed, position, 'suspectB');
+
+      // Neither action may change the board.
+      expect(identical(crossed, placed), isTrue);
+      expect(identical(noted, placed), isTrue);
+      expect(placed.cellAt(position).characterId, 'suspectA');
+    });
+
+    // Checks how notes interact with automatically generated crosses.
+    test('Automatic cross blocks notes until manually cleared', () {
+      final position = (row: 2, column: 4);
+
+      // Placing a character generates a cross at the test position.
+      final placed = placeCharacter(BoardState.empty(6, 6), (
+        row: 2,
+        column: 2,
+      ), 'suspectA');
+
+      // Attempt to add a note on the automatic cross.
+      final blocked = toggleNote(placed, position, 'suspectB');
+      expect(identical(blocked, placed), isTrue);
+
+      // Manually remove the cross and add a note.
+      final cleared = toggleCross(blocked, position);
+      final noted = toggleNote(cleared, position, 'suspectB');
+
+      expect(noted.cellAt(position).notes, {'suspectB'});
+
+      // Adding a cross again must overwrite the note.
+      final recrossed = toggleCross(noted, position);
+      expect(recrossed.cellAt(position).crossed, isTrue);
+      expect(recrossed.cellAt(position).notes, isEmpty);
+    });
+
+    // Checks that a rejected placement causes no other changes.
+    test('Placement on a cross does not modify the board', () {
+      final target = (row: 2, column: 3);
+      final original = BoardState.empty(6, 6);
+
+      // Add a cross to the target and a note in its row.
+      final crossed = toggleCross(original, target);
+      final noted = toggleNote(crossed, (row: 2, column: 0), 'suspectB');
+
+      // Attempt to place a character on the crossed target.
+      final result = placeCharacter(noted, target, 'suspectA');
+
+      // The rejected action must have no side effects.
+      expect(identical(result, noted), isTrue);
+      expect(result.cellAt(target).crossed, isTrue);
+      expect(result.cellAt((row: 2, column: 0)).notes, {'suspectB'});
+      expect(result.cellAt((row: 0, column: 3)).isEmpty, isTrue);
+    });
+
+    // Checks that characters can share a column after clearing a cross.
+    test('Two characters can occupy the same column', () {
+      final firstPosition = (row: 1, column: 3);
+      final secondPosition = (row: 4, column: 3);
+
+      // Place the first character.
+      final first = placeCharacter(
+        BoardState.empty(6, 6),
+        firstPosition,
+        'suspectA',
+      );
+
+      // Manually remove the automatic cross blocking the second.
+      final cleared = toggleCross(first, secondPosition);
+
+      // Place another character in the same column.
+      final second = placeCharacter(cleared, secondPosition, 'suspectB');
+
+      // Both characters must remain on the board.
+      expect(second.cellAt(firstPosition).characterId, 'suspectA');
+      expect(second.cellAt(secondPosition).characterId, 'suspectB');
+
+      // The second placement must generate its own row crosses.
+      expect(second.cellAt((row: 4, column: 0)).crossed, isTrue);
+
+      // The original first placement must remain unchanged.
+      expect(first.cellAt(secondPosition).crossed, isTrue);
+    });
+  });
 }
