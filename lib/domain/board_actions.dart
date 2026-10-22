@@ -121,3 +121,17 @@ BoardState placeCharacter(
   // Return the entire result as one immutable board.
   return updated;
 }
+
+// Removes every marking from a cell.
+BoardState eraseCell(BoardState board, CellPosition position) {
+  // Read the cell and validate its coordinates.
+  final cell = board.cellAt(position);
+
+  // Nothing needs to change if the cell is already empty.
+  if (cell.isEmpty) {
+    return board;
+  }
+
+  // Replace the cell with an empty cell.
+  return board.withCell(position, CellState());
+}

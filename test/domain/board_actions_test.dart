@@ -465,4 +465,72 @@ void main() {
       expect(first.cellAt(secondPosition).crossed, isTrue);
     });
   });
+
+  group('EraseCell', () {
+    // Checks that erasing removes a cross.
+    test('Erases a cross', () {
+      final position = (row: 2, column: 3);
+      final crossed = toggleCross(BoardState.empty(6, 6), position);
+
+      final erased = eraseCell(crossed, position);
+
+      expect(erased.cellAt(position).isEmpty, isTrue);
+      expect(crossed.cellAt(position).crossed, isTrue);
+    });
+
+    // Checks that erasing removes all notes.
+    test('Erases multiple notes', () {
+      final position = (row: 2, column: 3);
+      var board = BoardState.empty(6, 6);
+
+      board = toggleNote(board, position, 'suspectA');
+      board = toggleNote(board, position, 'suspectB');
+
+      final erased = eraseCell(board, position);
+
+      expect(erased.cellAt(position).isEmpty, isTrue);
+      expect(board.cellAt(position).notes, {'suspectA', 'suspectB'});
+    });
+
+    // Checks that character removal preserves automatic crosses.
+    test('Erasing a character preserves its generated crosses', () {
+      final position = (row: 2, column: 3);
+
+      final placed = placeCharacter(
+        BoardState.empty(6, 6),
+        position,
+        'suspectA',
+      );
+
+      final erased = eraseCell(placed, position);
+
+      // The character is removed.
+      expect(erased.cellAt(position).isEmpty, isTrue);
+
+      // Previously generated crosses remain.
+      expect(erased.cellAt((row: 2, column: 0)).crossed, isTrue);
+      expect(erased.cellAt((row: 0, column: 3)).crossed, isTrue);
+
+      // The original placed board is unchanged.
+      expect(placed.cellAt(position).characterId, 'suspectA');
+    });
+
+    // Checks that erasing an empty cell does nothing.
+    test('Erasing an empty cell changes nothing', () {
+      final board = BoardState.empty(6, 6);
+
+      final erased = eraseCell(board, (row: 2, column: 3));
+
+      expect(identical(erased, board), isTrue);
+    });
+
+    // Checks that invalid coordinates are rejected.
+    test('Rejects invalid coordinates', () {
+      final board = BoardState.empty(6, 6);
+
+      expect(() => eraseCell(board, (row: -1, column: 0)), throwsRangeError);
+
+      expect(() => eraseCell(board, (row: 6, column: 0)), throwsRangeError);
+    });
+  });
 }
