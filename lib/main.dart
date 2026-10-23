@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'domain/board_actions.dart';
-import 'domain/board_session.dart';
+import 'session/board_session.dart';
 import 'domain/board_state.dart';
 
 // Smoke test: a description and its board.

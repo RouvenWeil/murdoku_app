@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:murdoku_app/domain/board_actions.dart';
-import 'package:murdoku_app/domain/board_session.dart';
+import 'package:murdoku_app/session/board_session.dart';
 import 'package:murdoku_app/domain/board_state.dart';
 
 void main() {

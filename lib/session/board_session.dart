@@ -1,6 +1,6 @@
 // Coordinates gameplay actions and bounded Undo history.
-import 'board_actions.dart' as actions;
-import 'board_state.dart';
+import '../domain/board_actions.dart' as actions;
+import '../domain/board_state.dart';
 
 class BoardSession {
   // Creates a session with an initial board and history limit.
