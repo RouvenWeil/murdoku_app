@@ -1,15 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:murdoku_app/session/game_session.dart';
 
 import 'domain/board_actions.dart';
-import 'session/board_session.dart';
 import 'domain/board_state.dart';
+import 'domain/solution_evaluation.dart';
 
 // Smoke test: a description and its board.
 typedef SmokeStep = ({String title, BoardState board});
 
 // Tools available in the temporary live-debugging screen.
-enum DebugTool { cross, noteA, noteB, placeA, placeB, erase }
+enum DebugTool { cross, noteA, noteB, placeA, placeB, placeV, erase }
 
 void main() {
   // WP-01B: Combined domain-action smoke test.
@@ -140,6 +141,7 @@ class MyApp extends StatelessWidget {
 }
 
 // Displays either recorded board states or a live BoardSession.
+
 class SmokeTestScreen extends StatefulWidget {
   final List<SmokeStep> steps;
 
@@ -155,16 +157,32 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
   DebugTool selectedTool = DebugTool.cross;
   String message = 'Select a tool and tap a cell.';
 
-  // Live gameplay state is coordinated by BoardSession.
-  late final BoardSession session;
+  // Synthetic reference solution for the smoke test.
+  final CaseSolution debugSolution = CaseSolution(
+    rows: 6,
+    columns: 6,
+    characterPositions: {
+      'suspectA': (row: 1, column: 1),
+      'suspectB': (row: 3, column: 3),
+      'victim': (row: 4, column: 5),
+    },
+  );
+
+  late GameSession game;
 
   @override
   void initState() {
     super.initState();
-    session = BoardSession(initialBoard: BoardState.empty(6, 6));
+    game = createGame();
   }
 
-  // Returns the label of the selected debugging tool.
+  GameSession createGame() {
+    return GameSession(
+      initialBoard: BoardState.empty(debugSolution.rows, debugSolution.columns),
+      solution: debugSolution,
+    );
+  }
+
   String toolLabel(DebugTool tool) {
     return switch (tool) {
       DebugTool.cross => 'Cross',
@@ -172,13 +190,23 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
       DebugTool.noteB => 'Note B',
       DebugTool.placeA => 'Place A',
       DebugTool.placeB => 'Place B',
+      DebugTool.placeV => 'Place V',
       DebugTool.erase => 'Eraser',
     };
   }
 
-  // Checks whether a character is already placed on the board.
+  // Returns the character ID represented by a placement tool.
+  String? placementId(DebugTool tool) {
+    return switch (tool) {
+      DebugTool.placeA => 'suspectA',
+      DebugTool.placeB => 'suspectB',
+      DebugTool.placeV => 'victim',
+      _ => null,
+    };
+  }
+
   bool characterPlaced(String characterId) {
-    final board = session.board;
+    final board = game.board;
 
     for (var row = 0; row < board.rows; row++) {
       for (var column = 0; column < board.columns; column++) {
@@ -192,51 +220,84 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
     return false;
   }
 
-  // Applies the selected tool through BoardSession.
+  // All gameplay actions go through GameSession.
   void applyTool(CellPosition position) {
     final changed = switch (selectedTool) {
-      DebugTool.cross => session.toggleCross(position),
-      DebugTool.noteA => session.toggleNote(position, 'suspectA'),
-      DebugTool.noteB => session.toggleNote(position, 'suspectB'),
-      DebugTool.placeA => session.placeCharacter(position, 'suspectA'),
-      DebugTool.placeB => session.placeCharacter(position, 'suspectB'),
-      DebugTool.erase => session.eraseCell(position),
+      DebugTool.cross => game.toggleCross(position),
+      DebugTool.noteA => game.toggleNote(position, 'suspectA'),
+      DebugTool.noteB => game.toggleNote(position, 'suspectB'),
+      DebugTool.placeA => game.placeCharacter(position, 'suspectA'),
+      DebugTool.placeB => game.placeCharacter(position, 'suspectB'),
+      DebugTool.placeV => game.placeCharacter(position, 'victim'),
+      DebugTool.erase => game.eraseCell(position),
     };
 
     setState(() {
       message = changed
           ? '${toolLabel(selectedTool)} at '
                 '(${position.row}, ${position.column})'
-          : 'No change at (${position.row}, ${position.column})';
+          : 'No change at '
+                '(${position.row}, ${position.column})';
 
-      // Return to Cross after successfully placing a character.
-      if (changed &&
-          (selectedTool == DebugTool.placeA ||
-              selectedTool == DebugTool.placeB)) {
+      // Return to the default tool after placing a character.
+      if (changed && placementId(selectedTool) != null) {
         selectedTool = DebugTool.cross;
       }
     });
   }
 
-  // Restores the board before the most recent action.
   void undoAction() {
+    if (!game.undo()) return;
+
     setState(() {
-      session.undo();
-      message = 'Restored the previous board state.';
+      message = 'Restored board; invalidated feedback stays cleared.';
     });
   }
 
-  // Clears the board and permanently discards its Undo history.
   void clearBoard() {
+    if (!game.clearAll()) return;
+
     setState(() {
-      session.clearAll();
       selectedTool = DebugTool.cross;
-      message = 'Board and Undo history cleared.';
+      message = 'Board, feedback and Undo history cleared.';
     });
   }
 
-  // Converts a cell into a short display label.
+  // Submit explicitly; never evaluate automatically.
+  void submitBoard() {
+    if (!game.canSubmit) return;
+
+    final result = game.submit();
+
+    setState(() {
+      if (result.solved) {
+        message = 'SOLVED! Board locked.';
+      } else {
+        final incorrectCount = result.feedbackByCell.values
+            .where((value) => value == PlacementVerdict.incorrect)
+            .length;
+
+        message =
+            'Incorrect submission: '
+            '$incorrectCount misplaced character(s).';
+      }
+    });
+  }
+
+  // Replaying creates a new GameSession.
+  void newAttempt() {
+    setState(() {
+      game = createGame();
+      selectedTool = DebugTool.cross;
+      message = 'New attempt started.';
+    });
+  }
+
   String cellLabel(CellState cell) {
+    if (cell.characterId == 'victim') {
+      return 'V';
+    }
+
     if (cell.characterId != null) {
       return cell.characterId!.replaceFirst('suspect', '');
     }
@@ -248,19 +309,34 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
     return cell.notes.map((id) => id.replaceFirst('suspect', '')).join(' ');
   }
 
-  // Selects a background color based on the cell content.
-  Color cellColor(CellState cell) {
-    if (cell.characterId != null) return Colors.teal.shade100;
-    if (cell.crossed) return Colors.red.shade100;
-    if (cell.notes.isNotEmpty) return Colors.amber.shade100;
+  // Submission feedback takes precedence over normal cell colors.
+  Color cellColor(CellState cell, PlacementVerdict? verdict) {
+    if (verdict == PlacementVerdict.correct) {
+      return Colors.green.shade100;
+    }
+
+    if (verdict == PlacementVerdict.incorrect) {
+      return Colors.red.shade200;
+    }
+
+    if (cell.characterId != null) {
+      return Colors.teal.shade100;
+    }
+
+    if (cell.crossed) {
+      return Colors.red.shade100;
+    }
+
+    if (cell.notes.isNotEmpty) {
+      return Colors.amber.shade100;
+    }
+
     return Colors.grey.shade200;
   }
 
-  // Renders the board using the current immutable BoardState.
   Widget buildBoard(BoardState board) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Keep the board square and inside the available area.
         final side = constraints.maxWidth < constraints.maxHeight
             ? constraints.maxWidth
             : constraints.maxHeight;
@@ -269,8 +345,8 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
           child: SizedBox.square(
             dimension: side,
             child: GridView.builder(
-              padding: EdgeInsets.zero,
               physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: board.columns,
                 crossAxisSpacing: 2,
@@ -278,7 +354,6 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
               ),
               itemCount: board.rows * board.columns,
               itemBuilder: (context, index) {
-                // Convert the grid index into a board position.
                 final position = (
                   row: index ~/ board.columns,
                   column: index % board.columns,
@@ -286,23 +361,47 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
 
                 final cell = board.cellAt(position);
 
-                // Only Live Session mode allows cell interaction.
+                final verdict = liveMode ? game.feedbackByCell[position] : null;
+
                 return Material(
-                  color: cellColor(cell),
+                  color: cellColor(cell, verdict),
                   child: InkWell(
-                    onTap: liveMode ? () => applyTool(position) : null,
-                    child: Center(
-                      child: Text(
-                        cellLabel(cell),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: cell.notes.isNotEmpty ? 12 : 20,
-                          fontWeight: cell.characterId != null
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: Colors.black87,
+                    // Solved boards cannot be edited.
+                    onTap: liveMode && !game.isSolved
+                        ? () => applyTool(position)
+                        : null,
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: Text(
+                            cellLabel(cell),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: cell.notes.isNotEmpty ? 12 : 20,
+                              fontWeight: cell.characterId != null
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: Colors.black87,
+                            ),
+                          ),
                         ),
-                      ),
+
+                        // Feedback symbols supplement the colors.
+                        if (verdict != null)
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: Icon(
+                              verdict == PlacementVerdict.correct
+                                  ? Icons.check_circle
+                                  : Icons.cancel,
+                              color: verdict == PlacementVerdict.correct
+                                  ? Colors.green.shade800
+                                  : Colors.red.shade900,
+                              size: 15,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 );
@@ -314,7 +413,6 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
     );
   }
 
-  // Displays the tools for interacting with the live board.
   Widget buildToolSelector() {
     return Wrap(
       alignment: WrapAlignment.center,
@@ -325,11 +423,10 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
           ChoiceChip(
             label: Text(toolLabel(tool)),
             selected: selectedTool == tool,
-
-            // A character cannot be selected while already placed.
             onSelected:
-                (tool == DebugTool.placeA && characterPlaced('suspectA')) ||
-                    (tool == DebugTool.placeB && characterPlaced('suspectB'))
+                game.isSolved ||
+                    (placementId(tool) != null &&
+                        characterPlaced(placementId(tool)!))
                 ? null
                 : (_) {
                     setState(() {
@@ -341,19 +438,87 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
     );
   }
 
+  Widget buildReplayControls() {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          OutlinedButton(
+            onPressed: stepIndex > 0 ? () => setState(() => stepIndex--) : null,
+            child: const Text('Previous'),
+          ),
+          FilledButton(
+            onPressed: stepIndex < widget.steps.length - 1
+                ? () => setState(() => stepIndex++)
+                : null,
+            child: const Text('Next'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildLiveControls() {
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            game.isSolved
+                ? 'Completed attempt — editing locked'
+                : 'Undo steps: ${game.undoDepth}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              OutlinedButton.icon(
+                onPressed: game.canUndo ? undoAction : null,
+                icon: const Icon(Icons.undo),
+                label: const Text('Undo'),
+              ),
+              FilledButton.icon(
+                onPressed: game.canSubmit ? submitBoard : null,
+                icon: const Icon(Icons.check),
+                label: const Text('Submit'),
+              ),
+              if (game.isSolved)
+                OutlinedButton.icon(
+                  onPressed: newAttempt,
+                  icon: const Icon(Icons.restart_alt),
+                  label: const Text('New attempt'),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: clearBoard,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Clear all'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Replay reads stored states; Live reads the current session.
-    final board = liveMode ? session.board : widget.steps[stepIndex].board;
+    // Replay uses stored board snapshots.
+    // Live Session uses the current GameSession.
+    final board = liveMode ? game.board : widget.steps[stepIndex].board;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Murdoku - WP-01B')),
+      appBar: AppBar(title: const Text('Murdoku - WP-01C')),
       body: SafeArea(
         child: Column(
           children: [
-            // Switch between recorded and interactive board states.
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               child: SegmentedButton<bool>(
                 segments: const [
                   ButtonSegment(value: false, label: Text('Replay')),
@@ -368,14 +533,13 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
               ),
             ),
 
-            // Show the title or latest action feedback.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Column(
                 children: [
                   Text(
                     liveMode
-                        ? 'Live Session'
+                        ? (game.isSolved ? 'CASE SOLVED' : 'Live Session')
                         : 'Step ${stepIndex + 1} / '
                               '${widget.steps.length}',
                     style: Theme.of(context).textTheme.titleMedium,
@@ -389,14 +553,12 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
               ),
             ),
 
-            // Select the action to perform in Live Session.
-            if (liveMode)
+            if (liveMode && !game.isSolved)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: buildToolSelector(),
               ),
 
-            // Display the board in both modes.
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -404,55 +566,7 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
               ),
             ),
 
-            // Original Previous/Next navigation in Replay mode.
-            if (!liveMode)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    OutlinedButton(
-                      onPressed: stepIndex > 0
-                          ? () => setState(() => stepIndex--)
-                          : null,
-                      child: const Text('Previous'),
-                    ),
-                    FilledButton(
-                      onPressed: stepIndex < widget.steps.length - 1
-                          ? () => setState(() => stepIndex++)
-                          : null,
-                      child: const Text('Next'),
-                    ),
-                  ],
-                ),
-              ),
-
-            // Actual Undo controls in Live Session mode.
-            if (liveMode)
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  children: [
-                    Text('Undo steps: ${session.undoDepth}'),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: session.canUndo ? undoAction : null,
-                          icon: const Icon(Icons.undo),
-                          label: const Text('Undo'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: clearBoard,
-                          icon: const Icon(Icons.delete_outline),
-                          label: const Text('Clear all'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+            if (liveMode) buildLiveControls() else buildReplayControls(),
           ],
         ),
       ),
