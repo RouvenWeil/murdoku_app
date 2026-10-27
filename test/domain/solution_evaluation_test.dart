@@ -13,7 +13,7 @@ void main() {
     },
   );
 
-  // Builds a fully committed board without relying on UI actions.
+  // Direct board construction separates evaluation tests from placement actions
   BoardState makeBoard({
     required CellPosition a,
     required CellPosition b,

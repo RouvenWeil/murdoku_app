@@ -1,53 +1,43 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:murdoku_app/session/game_session.dart';
 
 import 'domain/board_actions.dart';
 import 'domain/board_state.dart';
 import 'domain/solution_evaluation.dart';
+import 'session/game_session.dart';
 
-// Smoke test: a description and its board.
+// Static replay snapshots for the temporary domain smoke test
 typedef SmokeStep = ({String title, BoardState board});
 
-// Tools available in the temporary live-debugging screen.
+// Temporary editing modes for the live gameplay debugger
 enum DebugTool { cross, noteA, noteB, placeA, placeB, placeV, erase }
 
+// Smoke-test assertions cover immutable transformations and rejected actions
 void main() {
-  // WP-01B: Combined domain-action smoke test.
-
-  // Create an empty 6x6 board.
   final original = BoardState.empty(6, 6);
   final position = (row: 2, column: 3);
 
-  // STEP 1: Add two notes to the same cell.
   final noteA = toggleNote(original, position, 'suspectA');
   final notesAB = toggleNote(noteA, position, 'suspectB');
 
-  // Verify that notes combine without changing the original.
   assert(notesAB.cellAt(position).notes.length == 2);
   assert(notesAB.cellAt(position).notes.contains('suspectA'));
   assert(notesAB.cellAt(position).notes.contains('suspectB'));
   assert(original.cellAt(position).isEmpty);
 
-  // STEP 2: Replace both notes with a cross.
   final crossed = toggleCross(notesAB, position);
 
-  // Verify that the cross overwrites the notes.
   assert(crossed.cellAt(position).crossed);
   assert(crossed.cellAt(position).notes.isEmpty);
   assert(notesAB.cellAt(position).notes.length == 2);
 
-  // STEP 3: Attempt to add a note to a crossed cell.
   final blockedNote = toggleNote(crossed, position, 'suspectA');
 
-  // Verify that the action was rejected.
   assert(identical(blockedNote, crossed));
 
-  // STEP 4: Toggle the cross off and add a new note.
   final cleared = toggleCross(crossed, position);
   final renoted = toggleNote(cleared, position, 'suspectB');
 
-  // Verify that removing the cross did not restore old notes.
   assert(cleared.cellAt(position).isEmpty);
   assert(
     renoted.cellAt(position).notes == {'suspectB'} ||
@@ -55,55 +45,42 @@ void main() {
             renoted.cellAt(position).notes.contains('suspectB')),
   );
 
-  // STEP 5: Place a character on the noted cell.
   final placed = placeCharacter(renoted, position, 'suspectA');
 
-  // Verify placement and note removal.
   assert(placed.cellAt(position).characterId == 'suspectA');
   assert(placed.cellAt(position).notes.isEmpty);
 
-  // Verify automatic crosses in the row and column.
   assert(placed.cellAt((row: 2, column: 0)).crossed);
   assert(placed.cellAt((row: 0, column: 3)).crossed);
 
-  // Verify unrelated cells remain empty.
   assert(placed.cellAt((row: 0, column: 0)).isEmpty);
 
-  // STEP 6: Attempt to cross an occupied character cell.
   final blockedCross = toggleCross(placed, position);
 
-  // Verify that the character cannot be overwritten.
   assert(identical(blockedCross, placed));
 
-  // STEP 7: Allow a second character in the same row.
+  // Deliberate debugging sequence for manual cross clearing and same-row placement
   final secondPosition = (row: 2, column: 5);
   final available = toggleCross(placed, secondPosition);
   final secondPlaced = placeCharacter(available, secondPosition, 'suspectB');
 
-  // Verify that both characters are preserved.
   assert(secondPlaced.cellAt(position).characterId == 'suspectA');
   assert(secondPlaced.cellAt(secondPosition).characterId == 'suspectB');
 
-  // STEP 8: Erase the original character.
   final erased = eraseCell(secondPlaced, position);
 
-  // Verify that the character is gone.
   assert(erased.cellAt(position).isEmpty);
 
-  // Verify that its generated crosses remain.
   assert(erased.cellAt((row: 2, column: 0)).crossed);
   assert(erased.cellAt((row: 0, column: 3)).crossed);
 
-  // Verify that the previous board remains unchanged.
   assert(secondPlaced.cellAt(position).characterId == 'suspectA');
   assert(original.cellAt(position).isEmpty);
 
-  // Report success when running in debug mode.
   if (kDebugMode) {
     print('WP-01B: All board-action assertions passed!');
   }
 
-  // Open a visual viewer for each state of the smoke test.
   runApp(
     MyApp(
       steps: [
@@ -124,7 +101,7 @@ void main() {
   );
 }
 
-// Displays our smoke-test board states in a simple Flutter app.
+// Debug-only presentation outside the case-driven gameplay UI
 class MyApp extends StatelessWidget {
   final List<SmokeStep> steps;
 
@@ -140,7 +117,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Displays either recorded board states or a live BoardSession.
 
 class SmokeTestScreen extends StatefulWidget {
   final List<SmokeStep> steps;
@@ -157,7 +133,7 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
   DebugTool selectedTool = DebugTool.cross;
   String message = 'Select a tool and tap a cell.';
 
-  // Synthetic reference solution for the smoke test.
+  // Synthetic reference solution independent of authored case JSON
   final CaseSolution debugSolution = CaseSolution(
     rows: 6,
     columns: 6,
@@ -195,7 +171,6 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
     };
   }
 
-  // Returns the character ID represented by a placement tool.
   String? placementId(DebugTool tool) {
     return switch (tool) {
       DebugTool.placeA => 'suspectA',
@@ -220,7 +195,7 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
     return false;
   }
 
-  // All gameplay actions go through GameSession.
+  // Gameplay commands routed through GameSession for feedback consistency
   void applyTool(CellPosition position) {
     final changed = switch (selectedTool) {
       DebugTool.cross => game.toggleCross(position),
@@ -239,7 +214,6 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
           : 'No change at '
                 '(${position.row}, ${position.column})';
 
-      // Return to the default tool after placing a character.
       if (changed && placementId(selectedTool) != null) {
         selectedTool = DebugTool.cross;
       }
@@ -263,7 +237,7 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
     });
   }
 
-  // Submit explicitly; never evaluate automatically.
+  // Submit remains explicit even after all characters are placed
   void submitBoard() {
     if (!game.canSubmit) return;
 
@@ -284,7 +258,7 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
     });
   }
 
-  // Replaying creates a new GameSession.
+  // New attempt replaces the solved session with fresh board and feedback state
   void newAttempt() {
     setState(() {
       game = createGame();
@@ -309,7 +283,6 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
     return cell.notes.map((id) => id.replaceFirst('suspect', '')).join(' ');
   }
 
-  // Submission feedback takes precedence over normal cell colors.
   Color cellColor(CellState cell, PlacementVerdict? verdict) {
     if (verdict == PlacementVerdict.correct) {
       return Colors.green.shade100;
@@ -334,6 +307,7 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
     return Colors.grey.shade200;
   }
 
+  // Board rendering derived from immutable snapshots and current feedback
   Widget buildBoard(BoardState board) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -354,6 +328,7 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
               ),
               itemCount: board.rows * board.columns,
               itemBuilder: (context, index) {
+                // Row-major indexing consistent with JSON room and object grids
                 final position = (
                   row: index ~/ board.columns,
                   column: index % board.columns,
@@ -361,12 +336,12 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
 
                 final cell = board.cellAt(position);
 
+                // Feedback shown only for live gameplay and never for static replay
                 final verdict = liveMode ? game.feedbackByCell[position] : null;
 
                 return Material(
                   color: cellColor(cell, verdict),
                   child: InkWell(
-                    // Solved boards cannot be edited.
                     onTap: liveMode && !game.isSolved
                         ? () => applyTool(position)
                         : null,
@@ -386,7 +361,6 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
                           ),
                         ),
 
-                        // Feedback symbols supplement the colors.
                         if (verdict != null)
                           Positioned(
                             top: 2,
@@ -508,8 +482,7 @@ class _SmokeTestScreenState extends State<SmokeTestScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Replay uses stored board snapshots.
-    // Live Session uses the current GameSession.
+    // Replay uses recorded snapshots while live mode uses the active session
     final board = liveMode ? game.board : widget.steps[stepIndex].board;
 
     return Scaffold(

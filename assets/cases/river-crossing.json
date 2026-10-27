@@ -1,0 +1,118 @@
+
+{
+  "id": "river-crossing",
+  "title": "River Crossing",
+  "difficulty": "easy",
+  "rows": 10,
+  "columns": 9,
+
+  "roomGrid": [
+    [0, 0, 0, 0, 1, 1, 1, 2, 2],
+    [0, 0, 0, 0, 1, 2, 2, 2, 2],
+    [0, 0, 0, 1, 1, 2, 2, 2, 2],
+    [0, 0, 1, 1, 3, 2, 2, 2, 2],
+    [0, 0, 1, 3, 3, 2, 2, 2, 2],
+    [0, 1, 1, 2, 2, 2, 2, 2, 2],
+    [0, 1, 2, 2, 2, 4, 4, 4, 2],
+    [0, 0, 2, 2, 2, 4, 4, 4, 4],
+    [0, 0, 2, 2, 2, 4, 4, 4, 4],
+    [0, 2, 2, 2, 2, 2, 4, 4, 4]
+  ],
+
+  "roomNames": {
+    "0": "River",
+    "1": "Cliffs",
+    "2": "Woods",
+    "3": "Hunting Cabin",
+    "4": "Fort"
+  },
+
+  "objectGrid": [
+    [null, null, null, null, null, null, null, "tree", null],
+    [null, null, "boulder", null, null, null, "carriage-right-right", "carriage-right-left", null],
+    [null, null, null, null, null, null, null, null, "shrub"],
+    [null, null, null, null, "chair", null, null, "horse", null],
+    [null, null, null, "horse", null, "tree", null, null, "tree"],
+    [null, "boulder", null, "shrub", "carriage-right-right", "carriage-right-left", null, null, null],
+    [null, null, "horse", null, null, null, null, "crate", null],
+    [null, null, null, "tree", null, "crate", "shelf", null, null],
+    [null, null, null, null, null, null, null, "chair", null],
+    [null, null, null, null, null, "horse", null, null, "shelf"]
+  ],
+
+  "object-tint": "red",
+
+  "general-clues": [
+    "There's exactly one outlaw hiding amongst the suspects. The outlaw may or may not be the murderer.",
+    "The outlaw was alone.",
+    "Either the top row or the bottom row was empty."
+  ],
+
+  "characters": [
+    {
+      "id": "A",
+      "name": "Alvin",
+      "clue": "He was beside a crate.",
+      "imageAsset": null,
+      "solution": [7, 7]
+    },
+    {
+      "id": "B",
+      "name": "Basil",
+      "clue": "He was sitting in a chair.",
+      "imageAsset": null,
+      "solution": [3, 4]
+    },
+    {
+      "id": "C",
+      "name": "Clarence",
+      "clue": "He was beside a tree.",
+      "imageAsset": null,
+      "solution": [4, 6]
+    },
+    {
+      "id": "D",
+      "name": "Delphine",
+      "clue": "She was in a carriage.",
+      "imageAsset": null,
+      "solution": [5, 5]
+    },
+    {
+      "id": "E",
+      "name": "Estelle",
+      "clue": "She was exactly six rows south of the outlaw.",
+      "imageAsset": null,
+      "solution": [9, 0]
+    },
+    {
+      "id": "F",
+      "name": "Flora",
+      "clue": "She was on a horse.",
+      "imageAsset": null,
+      "solution": [6, 2]
+    },
+    {
+      "id": "G",
+      "name": "Gilbert",
+      "clue": "He was beside a boulder.",
+      "imageAsset": null,
+      "solution": [1, 1]
+    },
+    {
+      "id": "H",
+      "name": "Horatio",
+      "clue": "Not the outlaw. He was alone.",
+      "imageAsset": null,
+      "solution": [2, 3]
+    },
+    {
+      "id": "V",
+      "name": "Valeria",
+      "clue": "The Victim. Not the outlaw. She was alone with the murderer.",
+      "imageAsset": null,
+      "solution": [8, 8]
+    }
+  ],
+
+  "murder-id": "A"
+}

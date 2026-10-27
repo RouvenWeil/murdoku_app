@@ -3,10 +3,7 @@ import '../domain/board_state.dart';
 import '../domain/solution_evaluation.dart' as evaluation;
 import 'board_session.dart';
 
-/// Coordinates one attempt at solving a Murdoku case.
-///
-/// Board history, submission feedback, and completion state are
-/// deliberately separate responsibilities.
+// Session coordinator separating board history, feedback and completion
 class GameSession {
   GameSession({
     required BoardState initialBoard,
@@ -28,13 +25,13 @@ class GameSession {
   final BoardSession _boardSession;
   final evaluation.CaseSolution _solution;
 
+  // Terminal completion flag locks the existing attempt
   bool _isSolved = false;
 
-  // Feedback is not part of the board's Undo snapshots.
+  // Feedback lifetime independent of BoardSession Undo history
   Map<CellPosition, evaluation.PlacementVerdict> _feedbackByCell =
   const {};
 
-  // Public read-only state.
   BoardState get board => _boardSession.board;
 
   bool get isSolved => _isSolved;
@@ -49,9 +46,7 @@ class GameSession {
   Map<CellPosition, evaluation.PlacementVerdict> get feedbackByCell =>
       _feedbackByCell;
 
-  /// Applies an edit while maintaining feedback consistency.
-  ///
-  /// Returns false if the case is solved or the action is a no-op.
+  // Accepted edits retain feedback only for unchanged character placements
   bool _applyEdit(bool Function() action) {
     if (_isSolved) return false;
 
@@ -64,9 +59,6 @@ class GameSession {
     return true;
   }
 
-  /// Keeps feedback only where the committed character is unchanged.
-  ///
-  /// This checks placement identity, not notes or crosses.
   void _invalidateChangedPlacements(
       BoardState before,
       BoardState after,
@@ -83,6 +75,7 @@ class GameSession {
       final currentCharacter =
           after.cellAt(position).characterId;
 
+      // Changes to notes or crosses do not invalidate placement feedback
       if (previousCharacter == currentCharacter) {
         retained[position] = entry.value;
       }
@@ -94,7 +87,6 @@ class GameSession {
     );
   }
 
-  // Player actions delegate to BoardSession.
 
   bool toggleNote(CellPosition position, String characterId) {
     return _applyEdit(
@@ -120,15 +112,11 @@ class GameSession {
     );
   }
 
-  /// Restores the previous board, but never restores old feedback.
+  // Undo restores board state without restoring previously discarded feedback
   bool undo() {
     return _applyEdit(_boardSession.undo);
   }
 
-  /// Clears markings, feedback, and Undo history.
-  ///
-  /// Returns false if the solved board is locked.
-  /// Otherwise returns true when the reset command is accepted.
   bool clearAll() {
     if (_isSolved) return false;
 
@@ -138,10 +126,7 @@ class GameSession {
     return true;
   }
 
-  /// Evaluates an eligible board following an explicit Submit.
-  ///
-  /// Incorrect attempts remain editable.
-  /// Correct attempts transition permanently to Solved.
+  // Explicit submission replaces feedback and sets terminal solved state
   evaluation.SubmissionResult submit() {
     if (_isSolved) {
       throw StateError('This case is already solved.');
@@ -154,7 +139,6 @@ class GameSession {
     final result =
     evaluation.evaluateSubmission(board, _solution);
 
-    // SubmissionResult already exposes an unmodifiable map.
     _feedbackByCell = result.feedbackByCell;
 
     if (result.solved) {

@@ -1,0 +1,112 @@
+{
+  "id": "the-art-museum-heist",
+  "title": "The Art Museum Heist",
+  "difficulty": "medium",
+  "rows": 9,
+  "columns": 9,
+
+  "roomGrid": [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 1, 1, 1],
+    [2, 2, 2, 2, 3, 3, 1, 1, 1],
+    [2, 2, 2, 2, 3, 3, 1, 1, 1],
+    [4, 5, 5, 5, 3, 3, 3, 3, 4],
+    [4, 5, 5, 5, 3, 3, 3, 3, 4],
+    [4, 4, 4, 4, 4, 4, 4, 4, 4]
+  ],
+
+  "roomNames": {
+    "0": "Exhibition Hall",
+    "1": "Restroom",
+    "2": "Warehouse",
+    "3": "Security",
+    "4": "Air Ducts",
+    "5": "Vault"
+  },
+
+  "objectGrid": [
+    [null, "statue", "carpet-right", "carpet-left-right", "carpet-left-right", "carpet-left", null, "easel", null],
+    ["statue", null, null, null, null, null, "statue", null, "chair"],
+    [null, "easel", null, "statue", "plant", null, null, "easel", null],
+    [null, null, "carpet-right", "carpet-left-right", "carpet-left-right", "carpet-left", null, "chair", "carpet-down"],
+    [null, null, "crate", "statue", null, "chair", "chair", null, "plant-carpet-down-up"],
+    ["crate", null, null, null, null, "tv", "chair", null, "carpet-up"],
+    [null, "easel", null, "statue", "plant", null, "tv", "tv", null],
+    [null, null, null, "easel", null, null, "chair", "chair", null],
+    [null, null, null, null, null, null, null, null, null]
+  ],
+
+  "object-tint": "purple",
+
+  "general-clues": [],
+
+  "characters": [
+    {
+      "id": "A",
+      "name": "Axel",
+      "clue": "He was in the Exhibition Hall with exactly two other people.",
+      "imageAsset": null,
+      "solution": [1, 5]
+    },
+    {
+      "id": "B",
+      "name": "Bruce",
+      "clue": "He was in the Air Ducts. He was exactly one column east of Hassan.",
+      "imageAsset": null,
+      "solution": [8, 3]
+    },
+    {
+      "id": "C",
+      "name": "Cadence",
+      "clue": "She was in the Vault.",
+      "imageAsset": null,
+      "solution": [7, 1]
+    },
+    {
+      "id": "D",
+      "name": "Doris",
+      "clue": "Everyone in her area was beside a statue, including herself.",
+      "imageAsset": null,
+      "solution": [2, 6]
+    },
+    {
+      "id": "E",
+      "name": "Esther",
+      "clue": "She was sitting on a chair.",
+      "imageAsset": null,
+      "solution": [3, 7]
+    },
+    {
+      "id": "F",
+      "name": "Fred",
+      "clue": "He was one column west of Axel.",
+      "imageAsset": null,
+      "solution": [5, 4]
+    },
+    {
+      "id": "G",
+      "name": "Grayson",
+      "clue": "He was beside a crate.",
+      "imageAsset": null,
+      "solution": [4, 0]
+    },
+    {
+      "id": "H",
+      "name": "Hassan",
+      "clue": "He was on a carpet.",
+      "imageAsset": null,
+      "solution": [0, 2]
+    },
+    {
+      "id": "V",
+      "name": "Victor",
+      "clue": "The Victim. He was alone with the murderer.",
+      "imageAsset": null,
+      "solution": [6, 8]
+    }
+  ],
+
+  "murder-id": "B"
+}

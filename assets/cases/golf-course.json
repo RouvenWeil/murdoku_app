@@ -1,0 +1,181 @@
+
+{
+  "id": "golf-course",
+  "title": "The Golf Course",
+  "difficulty": "expert",
+  "rows": 16,
+  "columns": 16,
+
+  "roomGrid": [
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 1, 1, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 1, 1, 1, 3, 3, 3],
+    [0, 0, 0, 2, 2, 2, 2, 2, 2, 4, 4, 4, 3, 3, 3, 3],
+    [0, 0, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 3, 3, 3, 3],
+    [5, 5, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 3, 3, 3, 3],
+    [5, 5, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3],
+    [5, 5, 5, 2, 2, 2, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3],
+    [5, 5, 5, 5, 2, 2, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3],
+    [5, 5, 5, 5, 2, 2, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3],
+    [5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7, 7, 3, 3, 3],
+    [5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7, 7, 3, 3, 3],
+    [5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7],
+    [5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7],
+    [5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7]
+  ],
+
+  "roomNames": {
+    "0": "Hole 2",
+    "1": "Hole 3",
+    "2": "Hole 7",
+    "3": "Hole 4",
+    "4": "Hole 8",
+    "5": "Hole 1",
+    "6": "Hole 6",
+    "7": "Hole 5"
+  },
+
+  "objectGrid": [
+    ["sand", "sand", "sand", "tree", null, null, null, "tree", "tree", "tee", null, null, "tree", "water", "water", "water"],
+    ["sand", "sand", null, null, null, "sand", "flag", "tree", "tree", "tree", null, null, null, null, "tree", "water"],
+    ["sand", "tree", null, null, "sand", "sand", "sand", null, null, "tree", "water", "water", null, null, "flag", null],
+    ["sand", null, null, "sand", "sand", "sand", "sand", null, "flag", null, "water", "water", "water", null, null, null],
+    [null, "tee", null, "sand", "sand", "sand", "sand", null, "tree", "tree", null, null, null, null, "tee", null],
+    [null, "tree", "tree", null, null, null, null, "tree", "tree", null, null, "tee", null, "golf-cart", null, null],
+    [null, "tree", "tree", "tree", null, "sand", "sand", "sand", null, null, null, "tree", null, null, "tree", null],
+    ["flag", null, "tree", null, "sand", "sand", "sand", "sand", "golf-cart", null, "tree", "tree", null, "tree", "tree", "tree"],
+    [null, null, "tree", "tree", null, "sand", "sand", null, null, null, "tree", "tree", null, null, "tree", "tree"],
+    ["tree", null, null, "tree", null, null, null, null, null, null, "tree", null, "sand", null, null, null],
+    ["tree", null, null, null, "tee", null, "water", "water", "flag", null, null, "sand", "sand", "sand", null, null],
+    ["golf-cart", null, null, "golf-cart", null, "water", "water", "water", "water", "flag", "sand", "sand", "sand", "sand", "flag", "tree"],
+    [null, null, null, "tree", "flag", "tree", "water", "water", null, null, null, "sand", "sand", null, null, null],
+    [null, "tee", null, "tree", null, null, "tree", null, "tee", null, null, null, null, null, null, null],
+    [null, null, "tree", "tree", null, null, null, null, "water", "water", "water", null, null, "golf-cart", null, "tee"],
+    ["tree", "tree", "tree", null, null, "tree", "water", "water", "water", "water", "water", "water", null, null, null, null]
+  ],
+
+  "object-tint": "teal",
+
+  "general-clues": [
+    "Even-numbered holes have an even number of occupants(this includes zero occupants).",
+    "Odd-numbered holes have an odd number of occupants."
+  ],
+
+  "characters": [
+    {
+      "id": "A",
+      "name": "Anna",
+      "clue": "She was beside a water square.",
+      "imageAsset": null,
+      "solution": [15, 12]
+    },
+    {
+      "id": "B",
+      "name": "Breta",
+      "clue": "She was beside a tree in Hole 4. She had a higher hole number than Harry.",
+      "imageAsset": null,
+      "solution": [8, 13]
+    },
+    {
+      "id": "C",
+      "name": "Carson",
+      "clue": "He was not in the first or in the last column.",
+      "imageAsset": null,
+      "solution": [3, 5]
+    },
+    {
+      "id": "D",
+      "name": "Drew",
+      "clue": "He was beside a flag.",
+      "imageAsset": null,
+      "solution": [10, 9]
+    },
+    {
+      "id": "E",
+      "name": "Edna",
+      "clue": "She occupied the flag in an even-numbered hole.",
+      "imageAsset": null,
+      "solution": [12, 4]
+    },
+    {
+      "id": "F",
+      "name": "Flor",
+      "clue": "She did not occupy the hole immediately before Naomi's hole.",
+      "imageAsset": null,
+      "solution": [11, 3]
+    },
+    {
+      "id": "G",
+      "name": "Gerald",
+      "clue": "He was the only man to occupy a golf tee.",
+      "imageAsset": null,
+      "solution": [4, 1]
+    },
+    {
+      "id": "H",
+      "name": "Harry",
+      "clue": "In his hole, there was a woman in a cart.",
+      "imageAsset": null,
+      "solution": [14, 0]
+    },
+    {
+      "id": "I",
+      "name": "Iris",
+      "clue": "She was northwest of Flor and in the same hole.",
+      "imageAsset": null,
+      "solution": [9, 2]
+    },
+    {
+      "id": "J",
+      "name": "Jana",
+      "clue": "She occupied the golf tee on either the Hole 6, 7 or 8.",
+      "imageAsset": null,
+      "solution": [13, 8]
+    },
+    {
+      "id": "K",
+      "name": "Kent",
+      "clue": "He was in the same hole as Mona.",
+      "imageAsset": null,
+      "solution": [1, 10]
+    },
+    {
+      "id": "L",
+      "name": "Lars",
+      "clue": "His hole number is greater than Naomi's hole number.",
+      "imageAsset": null,
+      "solution": [7, 7]
+    },
+    {
+      "id": "M",
+      "name": "Mona",
+      "clue": "She was on the flag for either Hole 3, 4 or 5.",
+      "imageAsset": null,
+      "solution": [2, 14]
+    },
+    {
+      "id": "N",
+      "name": "Naomi",
+      "clue": "She was within a sand pit.",
+      "imageAsset": null,
+      "solution": [6, 6]
+    },
+    {
+      "id": "O",
+      "name": "Oscar",
+      "clue": "He was in the northmost row and beside a tree.",
+      "imageAsset": null,
+      "solution": [0, 11]
+    },
+    {
+      "id": "V",
+      "name": "Vinny",
+      "clue": "The Victim. He was alone with the murderer.",
+      "imageAsset": null,
+      "solution": [5, 15]
+    }
+  ],
+
+  "murder-id": "B"
+}

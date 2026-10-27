@@ -2,7 +2,7 @@ import 'package:collection/collection.dart';
 
 import 'board_state.dart';
 
-// An immutable reference solution for one case.
+// Immutable reference positions independent of player state
 class CaseSolution {
   final int rows;
   final int columns;
@@ -23,6 +23,7 @@ class CaseSolution {
       throw ArgumentError('A case needs at least one character.');
     }
 
+    // Duplicate reference cells rejected during case construction
     final occupied = <CellPosition>{};
 
     for (final entry in this.characterPositions.entries) {
@@ -46,10 +47,9 @@ class CaseSolution {
   }
 }
 
-// Feedback for a character's position at submission time.
+// Submission feedback defined per committed character cell
 enum PlacementVerdict { correct, incorrect }
 
-// Result of one explicit evaluation.
 class SubmissionResult {
   final bool solved;
   final Map<CellPosition, PlacementVerdict> feedbackByCell;
@@ -62,10 +62,7 @@ class SubmissionResult {
        );
 }
 
-// Extracts an eligible complete set of committed characters.
-//
-// Returns null if the board is incomplete, has incorrect character
-// identities, duplicate characters, or incompatible dimensions.
+// Eligibility checks committed character identities only player notes and crosses excluded from solution evaluation
 Map<String, CellPosition>? _eligiblePlacements(
   BoardState board,
   CaseSolution solution,
@@ -83,7 +80,6 @@ Map<String, CellPosition>? _eligiblePlacements(
 
       if (characterId == null) continue;
 
-      // Reject duplicate committed character IDs.
       if (placements.containsKey(characterId)) {
         return null;
       }
@@ -92,7 +88,7 @@ Map<String, CellPosition>? _eligiblePlacements(
     }
   }
 
-  // Require exactly the characters defined by the case.
+  // Only the exact expected set of characters is eligible for Submit
   if (placements.length != solution.characterPositions.length) {
     return null;
   }
@@ -106,15 +102,10 @@ Map<String, CellPosition>? _eligiblePlacements(
   return placements;
 }
 
-// Enables Submit only when every required character is committed.
 bool canSubmit(BoardState board, CaseSolution solution) {
   return _eligiblePlacements(board, solution) != null;
 }
 
-// Evaluates committed positions against the reference solution.
-//
-// Call only in response to an explicit Submit action.
-// This function never changes the board.
 SubmissionResult evaluateSubmission(BoardState board, CaseSolution solution) {
   final placements = _eligiblePlacements(board, solution);
 
@@ -122,12 +113,12 @@ SubmissionResult evaluateSubmission(BoardState board, CaseSolution solution) {
     throw StateError('The board is not ready for submission.');
   }
 
-  // Compare entries by value, not map identity or insertion order.
+  // Value-based map comparison independent of insertion order
   const equality = MapEquality<String, CellPosition>();
 
   final solved = equality.equals(placements, solution.characterPositions);
 
-  // Produce separate feedback for every submitted character cell.
+  // Feedback keyed by submitted positions for cell-specific display
   final feedback = <CellPosition, PlacementVerdict>{};
 
   for (final entry in placements.entries) {

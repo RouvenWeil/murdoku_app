@@ -1,0 +1,86 @@
+
+{
+  "id": "horse-with-no-name",
+  "title": "A Horse With No Name",
+  "difficulty": "easy",
+  "rows": 6,
+  "columns": 6,
+
+  "roomGrid": [
+    [null, 0, 0, 0, 0, null],
+    [1, 1, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1],
+    [2, 2, 1, 1, 1, 1],
+    [2, 2, 1, 1, 1, 1],
+    [2, 2, 1, 1, 1, null]
+  ],
+
+  "roomNames": {
+    "0": "Canyon",
+    "1": "Desert",
+    "2": "Shack"
+  },
+
+  "objectGrid": [
+    [null, null, null, null, "boulder", null],
+    [null, "cactus", null, null, null, "boulder"],
+    [null, null, null, null, "horse", null],
+    [null, null, null, null, null, "cactus"],
+    ["chair", null, "boulder", null, null, null],
+    ["table", null, null, null, null, null]
+  ],
+
+  "object-tint": null,
+
+  "general-clues": [
+    "There's exactly one outlaw hiding amongst the suspects. The outlaw may or may not be the murderer.",
+    "The outlaw was on the horse."
+  ],
+
+  "characters": [
+    {
+      "id": "A",
+      "name": "Aldous",
+      "clue": "He was beside a cactus.",
+      "imageAsset": null,
+      "solution": [4, 5]
+    },
+    {
+      "id": "B",
+      "name": "Blanche",
+      "clue": "She was not in the Desert. She was in the same diagonal as Aldous.",
+      "imageAsset": null,
+      "solution": [1, 2]
+    },
+    {
+      "id": "C",
+      "name": "Cornelius",
+      "clue": "He was north of Aldous.",
+      "imageAsset": null,
+      "solution": [2, 4]
+    },
+    {
+      "id": "D",
+      "name": "Dahlia",
+      "clue": "She was beside the table.",
+      "imageAsset": null,
+      "solution": [5, 1]
+    },
+    {
+      "id": "E",
+      "name": "Emeric",
+      "clue": "He was beside a boulder.",
+      "imageAsset": null,
+      "solution": [0, 3]
+    },
+    {
+      "id": "V",
+      "name": "Vin",
+      "clue": "The Victim. Not the outlaw. He was alone with the murderer.",
+      "imageAsset": null,
+      "solution": [3, 0]
+    }
+  ],
+
+  "murder-id": "D"
+}

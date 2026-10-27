@@ -1,0 +1,182 @@
+{
+  "boulder": {
+    "name": "Boulder",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "cactus": {
+    "name": "Cactus",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "car-left-left": {
+    "name": "Car",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "car-left-right": {
+    "name": "Car",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "carpet-down": {
+    "name": "Carpet",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "carpet-down-right": {
+    "name": "Carpet",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "carpet-left": {
+    "name": "Carpet",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "carpet-left-right": {
+    "name": "Carpet",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "carpet-right": {
+    "name": "Carpet",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "carpet-up": {
+    "name": "Carpet",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "carriage-right-left": {
+    "name": "Carriage",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "carriage-right-right": {
+    "name": "Carriage",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "chair": {
+    "name": "Chair",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "crate": {
+    "name": "Crate",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "easel": {
+    "name": "Easel",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "flag": {
+    "name": "Flag",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "flowers": {
+    "name": "Flowers",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "golf-cart": {
+    "name": "Golf Cart",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "horse": {
+    "name": "Horse",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "lily-pad": {
+    "name": "Lily Pad",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "oil": {
+    "name": "Oil Slick",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "plant": {
+    "name": "Plant",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "plant-carpet-down-up": {
+    "name": "Plant",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "sand": {
+    "name": "Sand",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "shelf": {
+    "name": "Shelf",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "shrub": {
+    "name": "Shrub",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "statue": {
+    "name": "Statue",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "table": {
+    "name": "Table",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "table-down": {
+    "name": "Table",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "table-left-up": {
+    "name": "Table",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "table-right": {
+    "name": "Table",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "table-up": {
+    "name": "Table",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "tee": {
+    "name": "Golf Tee",
+    "isOccupiable": true,
+    "imageAsset": null
+  },
+  "tree": {
+    "name": "Tree",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "tv": {
+    "name": "TV",
+    "isOccupiable": false,
+    "imageAsset": null
+  },
+  "water": {
+    "name": "Water",
+    "isOccupiable": false,
+    "imageAsset": null
+  }
+}
