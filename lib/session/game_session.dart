@@ -1,5 +1,5 @@
-
 import '../domain/board_state.dart';
+import '../domain/case_definition.dart';
 import '../domain/solution_evaluation.dart' as evaluation;
 import 'board_session.dart';
 
@@ -9,11 +9,35 @@ class GameSession {
     required BoardState initialBoard,
     required evaluation.CaseSolution solution,
     int historyLimit = 20,
-  })  : _solution = solution,
-        _boardSession = BoardSession(
-          initialBoard: initialBoard,
-          historyLimit: historyLimit,
-        ) {
+  }) : this._(
+         initialBoard: initialBoard,
+         solution: solution,
+         historyLimit: historyLimit,
+         canOccupy: null,
+       );
+
+  // Case-based sessions use the scene grid as the placement boundary
+  GameSession.fromCase(CaseDefinition caseDefinition, {int historyLimit = 20})
+    : this._(
+        initialBoard: BoardState.empty(
+          caseDefinition.rows,
+          caseDefinition.columns,
+        ),
+        solution: caseDefinition.solution,
+        historyLimit: historyLimit,
+        canOccupy: caseDefinition.canOccupy,
+      );
+
+  GameSession._({
+    required BoardState initialBoard,
+    required evaluation.CaseSolution solution,
+    required int historyLimit,
+    required this._canOccupy,
+  }) : _solution = solution,
+       _boardSession = BoardSession(
+         initialBoard: initialBoard,
+         historyLimit: historyLimit,
+       ) {
     if (initialBoard.rows != solution.rows ||
         initialBoard.columns != solution.columns) {
       throw ArgumentError(
@@ -24,13 +48,13 @@ class GameSession {
 
   final BoardSession _boardSession;
   final evaluation.CaseSolution _solution;
+  final bool Function(CellPosition)? _canOccupy;
 
   // Terminal completion flag locks the existing attempt
   bool _isSolved = false;
 
   // Feedback lifetime independent of BoardSession Undo history
-  Map<CellPosition, evaluation.PlacementVerdict> _feedbackByCell =
-  const {};
+  Map<CellPosition, evaluation.PlacementVerdict> _feedbackByCell = const {};
 
   BoardState get board => _boardSession.board;
 
@@ -40,8 +64,7 @@ class GameSession {
 
   int get undoDepth => _boardSession.undoDepth;
 
-  bool get canSubmit =>
-      !_isSolved && evaluation.canSubmit(board, _solution);
+  bool get canSubmit => !_isSolved && evaluation.canSubmit(board, _solution);
 
   Map<CellPosition, evaluation.PlacementVerdict> get feedbackByCell =>
       _feedbackByCell;
@@ -59,10 +82,7 @@ class GameSession {
     return true;
   }
 
-  void _invalidateChangedPlacements(
-      BoardState before,
-      BoardState after,
-      ) {
+  void _invalidateChangedPlacements(BoardState before, BoardState after) {
     if (_feedbackByCell.isEmpty) return;
 
     final retained = <CellPosition, evaluation.PlacementVerdict>{};
@@ -70,10 +90,8 @@ class GameSession {
     for (final entry in _feedbackByCell.entries) {
       final position = entry.key;
 
-      final previousCharacter =
-          before.cellAt(position).characterId;
-      final currentCharacter =
-          after.cellAt(position).characterId;
+      final previousCharacter = before.cellAt(position).characterId;
+      final currentCharacter = after.cellAt(position).characterId;
 
       // Changes to notes or crosses do not invalidate placement feedback
       if (previousCharacter == currentCharacter) {
@@ -82,34 +100,34 @@ class GameSession {
     }
 
     _feedbackByCell =
-    Map<CellPosition, evaluation.PlacementVerdict>.unmodifiableOf(
-      retained,
-    );
+        Map<CellPosition, evaluation.PlacementVerdict>.unmodifiableOf(retained);
   }
 
-
   bool toggleNote(CellPosition position, String characterId) {
-    return _applyEdit(
-          () => _boardSession.toggleNote(position, characterId),
-    );
+    return _applyEdit(() => _boardSession.toggleNote(position, characterId));
   }
 
   bool toggleCross(CellPosition position) {
-    return _applyEdit(
-          () => _boardSession.toggleCross(position),
-    );
+    return _applyEdit(() => _boardSession.toggleCross(position));
   }
 
   bool placeCharacter(CellPosition position, String characterId) {
+    if (_isSolved) return false;
+
+    // Unknown IDs and non-occupiable case cells do not create board history
+    final canOccupy = _canOccupy;
+    if (canOccupy != null) {
+      if (!_solution.characterPositions.containsKey(characterId)) return false;
+      if (!canOccupy(position)) return false;
+    }
+
     return _applyEdit(
-          () => _boardSession.placeCharacter(position, characterId),
+      () => _boardSession.placeCharacter(position, characterId),
     );
   }
 
   bool eraseCell(CellPosition position) {
-    return _applyEdit(
-          () => _boardSession.eraseCell(position),
-    );
+    return _applyEdit(() => _boardSession.eraseCell(position));
   }
 
   // Undo restores board state without restoring previously discarded feedback
@@ -136,8 +154,7 @@ class GameSession {
       throw StateError('Not all required characters are placed.');
     }
 
-    final result =
-    evaluation.evaluateSubmission(board, _solution);
+    final result = evaluation.evaluateSubmission(board, _solution);
 
     _feedbackByCell = result.feedbackByCell;
 

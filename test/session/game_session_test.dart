@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:murdoku_app/domain/board_state.dart';
+import 'package:murdoku_app/domain/case_definition.dart';
+import 'package:murdoku_app/domain/character_definition.dart';
+import 'package:murdoku_app/domain/object_definition.dart';
 import 'package:murdoku_app/domain/solution_evaluation.dart';
 import 'package:murdoku_app/session/game_session.dart';
 
@@ -34,6 +37,100 @@ void main() {
       solution: solution,
     );
   }
+
+  // Small case fixture with blocked and absent cells
+  CaseDefinition sceneCase() => CaseDefinition(
+    id: 'test-scene',
+    title: 'Test Scene',
+    difficulty: 'test',
+    rows: 3,
+    columns: 3,
+    roomGrid: [
+      [0, 0, 0],
+      [0, 0, 0],
+      [null, 0, 0],
+    ],
+    roomNames: {0: 'Area'},
+    objectGrid: [
+      [null, null, 'shelf'],
+      [null, 'chair', null],
+      [null, null, null],
+    ],
+    objects: {
+      'shelf': const ObjectDefinition(name: 'Shelf', isOccupiable: false),
+      'chair': const ObjectDefinition(name: 'Chair', isOccupiable: true),
+    },
+    generalClues: [],
+    characters: [
+      const CharacterDefinition(
+        id: 'A',
+        name: 'A',
+        clue: '',
+        solution: (row: 0, column: 0),
+      ),
+      const CharacterDefinition(
+        id: 'B',
+        name: 'B',
+        clue: '',
+        solution: (row: 1, column: 1),
+      ),
+      const CharacterDefinition(
+        id: 'V',
+        name: 'V',
+        clue: '',
+        solution: (row: 2, column: 2),
+      ),
+    ],
+    murderId: 'A',
+  );
+
+  group('WP-02 - Case-aware GameSession', () {
+    test('blocked objects and absent cells reject placement without history', () {
+      final game = GameSession.fromCase(sceneCase());
+      final before = game.board;
+
+      expect(game.placeCharacter((row: 0, column: 2), 'A'), isFalse);
+      expect(game.placeCharacter((row: 2, column: 0), 'A'), isFalse);
+      expect(identical(game.board, before), isTrue);
+      expect(game.canUndo, isFalse);
+      expect(game.undoDepth, 0);
+    });
+
+    test('unknown characters do not create invalid case placements', () {
+      final game = GameSession.fromCase(sceneCase());
+      final before = game.board;
+
+      expect(game.placeCharacter((row: 0, column: 0), 'X'), isFalse);
+      expect(identical(game.board, before), isTrue);
+      expect(game.canUndo, isFalse);
+    });
+
+    test('valid placements remain atomic, undoable and submittable', () {
+      final game = GameSession.fromCase(sceneCase());
+
+      expect(game.placeCharacter((row: 0, column: 0), 'A'), isTrue);
+      expect(game.undoDepth, 1);
+      expect(game.board.cellAt((row: 0, column: 1)).crossed, isTrue);
+      expect(game.undo(), isTrue);
+      expect(game.board.cellAt((row: 0, column: 0)).isEmpty, isTrue);
+      expect(game.board.cellAt((row: 0, column: 1)).isEmpty, isTrue);
+
+      expect(game.placeCharacter((row: 0, column: 0), 'A'), isTrue);
+      expect(game.placeCharacter((row: 1, column: 1), 'B'), isTrue);
+      expect(game.placeCharacter((row: 2, column: 2), 'V'), isTrue);
+      expect(game.canSubmit, isTrue);
+      expect(game.submit().solved, isTrue);
+    });
+
+    test('case boundaries preserve the existing out-of-range contract', () {
+      final game = GameSession.fromCase(sceneCase());
+      expect(
+        () => game.placeCharacter((row: 3, column: 0), 'A'),
+        throwsRangeError,
+      );
+      expect(game.canUndo, isFalse);
+    });
+  });
 
   group('WP-01C - GameSession', () {
     test('New session starts active without feedback', () {

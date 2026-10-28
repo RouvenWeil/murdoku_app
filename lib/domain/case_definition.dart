@@ -67,7 +67,8 @@ class CaseDefinition {
       throw const FormatException('Murderer must be a known suspect.');
     }
 
-    // One source of truth for character solutions CaseSolution derived from the character records
+    // One source of truth for character solutions
+    // CaseSolution derived from the character records
     final positions = {
       for (final character in this.characters) character.id: character.solution,
     };
@@ -79,6 +80,16 @@ class CaseDefinition {
       columns: columns,
       characterPositions: positions,
     );
+    // Invalid reference placements fail while reading the authored case
+    for (final character in this.characters) {
+      if (!canOccupy(character.solution)) {
+        final position = character.solution;
+        throw FormatException(
+          'Character ${character.id} has a non-occupiable solution cell '
+          '(${position.row},${position.column}).',
+        );
+      }
+    }
   }
 
   final String id;

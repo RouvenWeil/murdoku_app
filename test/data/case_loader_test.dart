@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:murdoku_app/data/case_loader.dart';
-import 'package:murdoku_app/domain/board_state.dart';
 import 'package:murdoku_app/session/game_session.dart';
 
 // Case IDs match the JSON asset filenames
@@ -138,10 +137,7 @@ void main() {
     test('all five solutions can complete a GameSession', () async {
       for (final caseId in caseIds) {
         final data = await CaseLoader.load(caseId);
-        final game = GameSession(
-          initialBoard: BoardState.empty(data.rows, data.columns),
-          solution: data.solution,
-        );
+        final game = GameSession.fromCase(data);
         for (final character in data.characters) {
           expect(
             game.placeCharacter(character.solution, character.id),

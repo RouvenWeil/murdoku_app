@@ -139,15 +139,15 @@ void main() {
     });
 
     test('a blocking object prevents occupancy', () {
+      final json = caseJson();
+      (json['objectGrid'] as List)[0][0] = 'shelf';
       final catalog = {
-        'chair': const ObjectDefinition(name: 'Chair', isOccupiable: false),
+        'chair': const ObjectDefinition(name: 'Chair', isOccupiable: true),
+        'shelf': const ObjectDefinition(name: 'Shelf', isOccupiable: false),
       };
-      final data = CaseDefinition.fromJson(
-        caseJson(),
-        objectCatalog: catalog,
-      );
+      final data = CaseDefinition.fromJson(json, objectCatalog: catalog);
 
-      expect(data.canOccupy((row: 0, column: 1)), isFalse);
+      expect(data.canOccupy((row: 0, column: 0)), isFalse);
     });
 
     test('an absent room cell is not occupiable', () {
@@ -177,6 +177,24 @@ void main() {
       ((json['characters'] as List)[1] as Map)['solution'] = [0, 1];
 
       expect(() => readCase(json), throwsArgumentError);
+    });
+
+    test('a solution on a blocked object is rejected during case loading', () {
+      final catalog = {
+        'chair': const ObjectDefinition(name: 'Chair', isOccupiable: false),
+      };
+
+      expect(
+        () => CaseDefinition.fromJson(caseJson(), objectCatalog: catalog),
+        throwsFormatException,
+      );
+    });
+
+    test('a solution on an absent cell is rejected during case loading', () {
+      final json = caseJson();
+      (json['roomGrid'] as List)[1][0] = null;
+
+      expect(() => readCase(json), throwsFormatException);
     });
 
     test('general clues must be a list, even when empty', () {
