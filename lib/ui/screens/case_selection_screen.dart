@@ -47,9 +47,7 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
       ]);
       if (!mounted) return;
       await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => CaseScreen(caseData: caseData),
-        ),
+        MaterialPageRoute<void>(builder: (_) => CaseScreen(caseData: caseData)),
       );
     } finally {
       // No orientation preference remains when returning to case selection
@@ -92,8 +90,8 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
                 final columns = constraints.maxWidth < 600
                     ? 1
                     : constraints.maxWidth < 1000
-                        ? 2
-                        : 3;
+                    ? 2
+                    : 3;
                 return GridView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: cases.length,

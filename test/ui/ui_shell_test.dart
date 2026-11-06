@@ -71,9 +71,7 @@ void main() {
     expect(find.text('Anthony'), findsOneWidget);
   });
 
-  testWidgets('portrait case view offers a rotation fallback', (
-    tester,
-  ) async {
+  testWidgets('portrait case view offers a rotation fallback', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(() {

@@ -58,6 +58,19 @@ class CluePanelStub extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
             children: [
+              if (caseData.generalClues.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  child: Text('General clues'),
+                ),
+                for (final clue in caseData.generalClues)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(clue),
+                    ),
+                  ),
+              ],
               for (final character in caseData.characters)
                 Card(
                   color: selectedCharacterId == character.id
@@ -92,19 +105,6 @@ class CluePanelStub extends StatelessWidget {
                     ),
                   ),
                 ),
-              if (caseData.generalClues.isNotEmpty) ...[
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                  child: Text('General clues'),
-                ),
-                for (final clue in caseData.generalClues)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(clue),
-                    ),
-                  ),
-              ],
             ],
           ),
         ),
