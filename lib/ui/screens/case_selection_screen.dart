@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../data/case_loader.dart';
 import '../../domain/case_definition.dart';
+import '../widgets/murdoku_brand.dart';
 import 'case_screen.dart';
 
 class CaseSelectionScreen extends StatefulWidget {
@@ -18,7 +19,7 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
     'car-repair',
     'horse-with-no-name',
     'river-crossing',
-    'the-art-museum-heist',
+    'art-museum-heist',
     'golf-course',
   ];
 
@@ -59,7 +60,7 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('MURDOKU')),
+      appBar: AppBar(title: const MurdokuBrand(logoHeight: 28)),
       body: SafeArea(
         child: FutureBuilder<List<CaseDefinition>>(
           future: _cases,

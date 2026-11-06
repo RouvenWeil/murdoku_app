@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/case_definition.dart';
+import '../design/murdoku_typography.dart';
+import 'murdoku_buttons.dart';
 
 enum ToolPanelArrangement { expanded, horizontal, stacked, singleColumn }
 
@@ -22,6 +24,9 @@ class ToolPanelStub extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = MurdokuTypography.forViewport(
+      MediaQuery.sizeOf(context).width,
+    );
     if (showMinimap) {
       return Padding(
         padding: const EdgeInsets.all(8),
@@ -43,45 +48,35 @@ class ToolPanelStub extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             if (arrangement == ToolPanelArrangement.horizontal) ...[
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _CompactToolPlaceholder(icon: Icons.close, tooltip: 'Cross'),
-                  _CompactToolPlaceholder(
-                    icon: Icons.auto_fix_off,
-                    tooltip: 'Erase',
-                  ),
-                  _CompactToolPlaceholder(icon: Icons.undo, tooltip: 'Undo'),
+                  _tool('Cross', typography, iconOnly: true),
+                  _tool('Erase', typography, iconOnly: true),
+                  _tool('Undo', typography, iconOnly: true),
                 ],
               ),
               const SizedBox(height: 8),
             ] else if (arrangement == ToolPanelArrangement.stacked) ...[
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _CompactToolPlaceholder(icon: Icons.close, tooltip: 'Cross'),
-                  _CompactToolPlaceholder(
-                    icon: Icons.auto_fix_off,
-                    tooltip: 'Erase',
-                  ),
+                  _tool('Cross', typography, iconOnly: true),
+                  _tool('Erase', typography, iconOnly: true),
                 ],
               ),
               const SizedBox(height: 8),
-              const _CompactTextToolPlaceholder(label: 'Undo'),
+              _tool('Undo', typography, textOnly: true),
               const SizedBox(height: 8),
             ] else if (arrangement == ToolPanelArrangement.singleColumn) ...[
-              const _CompactTextToolPlaceholder(label: 'Cross'),
+              _tool('Cross', typography, textOnly: true),
               const SizedBox(height: 8),
-              const _CompactTextToolPlaceholder(label: 'Erase'),
+              _tool('Erase', typography, textOnly: true),
               const SizedBox(height: 8),
-              const _CompactTextToolPlaceholder(label: 'Undo'),
+              _tool('Undo', typography, textOnly: true),
               const SizedBox(height: 8),
             ],
-            const SizedBox(
-              height: 48,
-              width: double.infinity,
-              child: FilledButton(onPressed: null, child: Text('Submit')),
-            ),
+            MurdokuSubmitButton(onPressed: null, typography: typography),
           ],
         ),
       );
@@ -89,88 +84,44 @@ class ToolPanelStub extends StatelessWidget {
 
     return ListView(
       padding: const EdgeInsets.all(8),
-      children: const [
-        Text('Tools', style: TextStyle(fontWeight: FontWeight.w600)),
-        SizedBox(height: 8),
-        _ToolPlaceholder(icon: Icons.close, label: 'Cross'),
-        _ToolPlaceholder(icon: Icons.edit_note, label: 'Note'),
-        _ToolPlaceholder(icon: Icons.auto_fix_off, label: 'Erase'),
-        _ToolPlaceholder(icon: Icons.undo, label: 'Undo'),
-        SizedBox(height: 12),
-        SizedBox(
-          height: 48,
-          child: FilledButton(onPressed: null, child: Text('Submit')),
+      children: [
+        Text(
+          'Tools',
+          style: typography.heading.copyWith(fontWeight: FontWeight.w600),
         ),
+        const SizedBox(height: 8),
+        _tool('Cross', typography),
+        const SizedBox(height: 8),
+        _tool('Note', typography),
+        const SizedBox(height: 8),
+        _tool('Erase', typography),
+        const SizedBox(height: 8),
+        _tool('Undo', typography),
+        const SizedBox(height: 12),
+        MurdokuSubmitButton(onPressed: null, typography: typography),
       ],
     );
   }
-}
 
-class _CompactToolPlaceholder extends StatelessWidget {
-  const _CompactToolPlaceholder({required this.icon, required this.tooltip});
-
-  final IconData icon;
-  final String tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: SizedBox.square(
-        dimension: 48,
-        child: OutlinedButton(
-          onPressed: null,
-          style: OutlinedButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(48, 48),
-          ),
-          child: Icon(icon),
-        ),
-      ),
-    );
-  }
-}
-
-class _CompactTextToolPlaceholder extends StatelessWidget {
-  const _CompactTextToolPlaceholder({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: null,
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-        ),
-        child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-      ),
-    );
-  }
-}
-
-class _ToolPlaceholder extends StatelessWidget {
-  const _ToolPlaceholder({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: SizedBox(
-        height: 48,
-        child: OutlinedButton.icon(
-          onPressed: null,
-          icon: Icon(icon),
-          label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-        ),
-      ),
+  Widget _tool(
+    String label,
+    MurdokuTypography typography, {
+    bool iconOnly = false,
+    bool textOnly = false,
+  }) {
+    final svg = switch (label) {
+      'Cross' => 'assets/ui/Vector-CrossOut.svg',
+      'Erase' => 'assets/ui/Vector-Eraser.svg',
+      'Undo' => 'assets/ui/Vector-Undo.svg',
+      _ => null,
+    };
+    return MurdokuToolButton(
+      label: label,
+      onPressed: null,
+      typography: typography,
+      iconAsset: textOnly ? null : svg,
+      fallbackIcon: label == 'Note' && !textOnly ? Icons.edit_note : null,
+      showLabel: !iconOnly,
     );
   }
 }

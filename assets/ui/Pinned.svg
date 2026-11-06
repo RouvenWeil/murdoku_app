@@ -1,0 +1,17 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 24C0 10.7452 10.7452 0 24 0H48V48H24C10.7452 48 0 37.2548 0 24Z" fill="#888888" fill-opacity="0.5"/>
+<path d="M12 36V33L18 27L21 30L15 36H12Z" fill="#BBBBBB"/>
+<mask id="stroke0_606_991" maskUnits="userSpaceOnUse" x="11" y="25" width="12" height="12" fill="black">
+<rect fill="white" x="11" y="25" width="12" height="12"/>
+<path d="M12 36V33L18 27L21 30L15 36H12Z"/>
+</mask>
+<path d="M12 33V36H15L21 30L18 27L12 33Z" stroke-width="2" stroke="black" mask="url(#stroke0_606_991)"/>
+<path d="M36 18L30 12H25.5V16.5L21 21H16.5V25.5L18 27L21 30L22.5 31.5H27V27L31.5 22.5H36V18Z" fill="#CFAF78"/>
+<mask id="stroke1_606_991" maskUnits="userSpaceOnUse" x="15.5" y="11" width="22" height="22" fill="black">
+<rect fill="white" x="15.5" y="11" width="22" height="22"/>
+<path d="M36 18L30 12H25.5V16.5L21 21H16.5V25.5L18 27L21 30L22.5 31.5H27V27L31.5 22.5H36V18Z"/>
+</mask>
+<path d="M30 12L36 18V22.5H31.5L27 27V31.5H22.5L21 30L18 27L16.5 25.5V21H21L25.5 16.5V12H30Z" stroke-width="2" stroke="black" mask="url(#stroke1_606_991)"/>
+<path d="M36 22.5L25.5 12V16.5L31.5 22.5H36Z" fill="black" fill-opacity="0.5"/>
+<path d="M16.5 21L27 31.5H22.5L21 30L18.75 32.25L15.75 29.25L18 27L16.5 25.5V21Z" fill="black" fill-opacity="0.5"/>
+</svg>

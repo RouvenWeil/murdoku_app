@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'design/murdoku_theme.dart';
 import 'screens/case_selection_screen.dart';
 
 class MurdokuApp extends StatelessWidget {
@@ -10,14 +11,7 @@ class MurdokuApp extends StatelessWidget {
     return MaterialApp(
       title: 'Murdoku',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF75B9BA),
-          brightness: Brightness.dark,
-        ),
-        scaffoldBackgroundColor: const Color(0xFF302F3D),
-      ),
+      theme: MurdokuTheme.dark(),
       home: const CaseSelectionScreen(),
     );
   }

@@ -7,7 +7,7 @@ const caseIds = [
   'car-repair',
   'horse-with-no-name',
   'river-crossing',
-  'the-art-museum-heist',
+  'art-museum-heist',
   'golf-course',
 ];
 
@@ -52,7 +52,7 @@ void main() {
           'car-repair': (6, 6, 6, null),
           'horse-with-no-name': (6, 6, 6, null),
           'river-crossing': (10, 9, 9, 'red'),
-          'the-art-museum-heist': (9, 9, 9, 'purple'),
+          'art-museum-heist': (9, 9, 9, 'purple'),
           'golf-course': (16, 16, 16, 'teal'),
         };
         for (final entry in expected.entries) {

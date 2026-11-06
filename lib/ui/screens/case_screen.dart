@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../domain/case_definition.dart';
+import '../session/clue_pin_store.dart';
 import '../widgets/board_viewport_stub.dart';
 import '../widgets/clue_panel_stub.dart';
 import '../widgets/tool_panel_stub.dart';
@@ -218,17 +219,31 @@ class CaseScreenLayout {
       surplus - initialClueExtra - toolExtra,
     );
     final clueWidth = minimumClueWidth + initialClueExtra + extraClue;
-    final toolWidth = minimumToolWidth + toolExtra;
+    // Once board and clue widths are secure, give unused width to the minimap.
+    // Its upper bound comes from available height, not a fixed 128dp cap.
+    final unusedWidth = math.max(
+      0.0,
+      surplus - initialClueExtra - toolExtra - extraClue,
+    );
+    final baseToolWidth = minimumToolWidth + toolExtra;
+    final mapHeightLimitedToolWidth =
+        arrangement == ToolPanelArrangement.expanded
+        ? baseToolWidth
+        : math.max(
+            baseToolWidth,
+            (height - minimapChromeHeight) / mapHeightFactor * mapWidthFactor +
+                2 * panelPadding,
+          );
+    final toolWidth =
+        baseToolWidth +
+        math.min(unusedWidth, mapHeightLimitedToolWidth - baseToolWidth);
     final boardViewportWidth = width - clueWidth - toolWidth - 2 * dividerWidth;
 
     final isPartial = arrangement != ToolPanelArrangement.expanded;
     final mapShortSide = isPartial
         ? math.min(
-            preferredMinimapSize,
-            math.min(
-              (toolWidth - 2 * panelPadding) / mapWidthFactor,
-              (height - minimapChromeHeight) / mapHeightFactor,
-            ),
+            (toolWidth - 2 * panelPadding) / mapWidthFactor,
+            (height - minimapChromeHeight) / mapHeightFactor,
           )
         : 0.0;
 
@@ -268,9 +283,10 @@ class _PartialCandidate {
 }
 
 class CaseScreen extends StatefulWidget {
-  const CaseScreen({super.key, required this.caseData});
+  const CaseScreen({super.key, required this.caseData, this.pinStore});
 
   final CaseDefinition caseData;
+  final CluePinStore? pinStore;
 
   @override
   State<CaseScreen> createState() => _CaseScreenState();
@@ -278,6 +294,8 @@ class CaseScreen extends StatefulWidget {
 
 class _CaseScreenState extends State<CaseScreen> {
   String? selectedCharacterId;
+
+  CluePinStore get _pinStore => widget.pinStore ?? CluePinStore.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -343,6 +361,10 @@ class _CaseScreenState extends State<CaseScreen> {
                       child: CluePanelStub(
                         caseData: widget.caseData,
                         selectedCharacterId: selectedCharacterId,
+                        pinnedClueId: _pinStore.pinnedFor(widget.caseData.id),
+                        onPinClue: (id) => setState(() {
+                          _pinStore.toggle(widget.caseData.id, id);
+                        }),
                         onCharacterSelected: (id) => setState(() {
                           selectedCharacterId = id;
                         }),
