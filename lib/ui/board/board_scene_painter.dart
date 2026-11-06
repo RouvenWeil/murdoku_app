@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../domain/board_state.dart';
 import '../../domain/case_definition.dart';
 import '../../domain/solution_evaluation.dart';
+import '../design/murdoku_tokens.dart';
 
 // Shared scene renderer for the navigable board and whole-board minimap
 class BoardScenePainter extends CustomPainter {
@@ -34,14 +35,6 @@ class BoardScenePainter extends CustomPainter {
   final double holdProgress;
   final bool paintCrosses;
 
-  static const _rooms = <Color>[
-    Color(0xFF777F9E),
-    Color(0xFF839A91),
-    Color(0xFF9F8699),
-    Color(0xFFA39283),
-    Color(0xFF7B91A3),
-  ];
-
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
@@ -49,13 +42,13 @@ class BoardScenePainter extends CustomPainter {
 
     final fill = Paint()..style = PaintingStyle.fill;
     final border = Paint()
-      ..color = const Color(0x99322F40)
+      ..color = MurdokuTokens.boardCellOutline
       ..strokeWidth = (cellSize * 0.017).clamp(0.25, 0.8).toDouble()
       ..style = PaintingStyle.stroke;
     final wall = Paint()
-      ..color = const Color(0xFF181824)
+      ..color = MurdokuTokens.boardRoomWall
       ..strokeWidth = (cellSize * 0.054).clamp(0.45, 2.6).toDouble();
-    final marker = Paint()..color = const Color(0xFF263242);
+    final marker = Paint()..color = MurdokuTokens.boardObjectMarker;
 
     for (var row = 0; row < caseData.rows; row++) {
       for (var column = 0; column < caseData.columns; column++) {
@@ -71,8 +64,9 @@ class BoardScenePainter extends CustomPainter {
 
         final roomId = caseData.roomGrid[row][column];
         fill.color = roomId == null
-            ? const Color(0xFF292837)
-            : _rooms[roomId.abs() % _rooms.length];
+            ? MurdokuTokens.absentCell
+            : MurdokuTokens.roomColors[roomId.abs() %
+                  MurdokuTokens.roomColors.length];
         canvas.drawRect(rect, fill);
         canvas.drawRect(rect, border);
         if (roomId == null) {
@@ -109,13 +103,13 @@ class BoardScenePainter extends CustomPainter {
         if (verdict != null) {
           canvas.drawCircle(
             rect.center,
-            math.max(1, (cellSize - 16) / 2),
+            math.max(1, (cellSize - MurdokuTokens.boardMarkDoubleInset) / 2),
             Paint()
               ..color = verdict == PlacementVerdict.correct
-                  ? const Color(0xFF52DF8C)
-                  : const Color(0xFFFF6D6D)
+                  ? MurdokuTokens.boardCorrect
+                  : MurdokuTokens.boardIncorrect
               ..style = PaintingStyle.stroke
-              ..strokeWidth = 4,
+              ..strokeWidth = MurdokuTokens.paintStrokeWidth,
           );
         }
       }
@@ -134,9 +128,9 @@ class BoardScenePainter extends CustomPainter {
         2 * math.pi * holdProgress,
         false,
         Paint()
-          ..color = const Color(0xFFF8EBCC)
+          ..color = MurdokuTokens.boardHoldIndicator
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 4,
+          ..strokeWidth = MurdokuTokens.paintStrokeWidth,
       );
     }
 
@@ -144,9 +138,9 @@ class BoardScenePainter extends CustomPainter {
       canvas.drawRect(
         viewportOutline!.deflate(1),
         Paint()
-          ..color = const Color(0xFFFFF7DD)
+          ..color = MurdokuTokens.minimapViewportOutline
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 4,
+          ..strokeWidth = MurdokuTokens.paintStrokeWidth,
       );
     }
     canvas.restore();
@@ -164,18 +158,21 @@ class BoardScenePainter extends CustomPainter {
         canvas,
         character,
         rect.center,
-        fontSize: math.max(1, cellSize - 16),
-        maxWidth: math.max(1, cellSize - 16),
+        fontSize: math.max(1, cellSize - MurdokuTokens.boardMarkDoubleInset),
+        maxWidth: math.max(1, cellSize - MurdokuTokens.boardMarkDoubleInset),
       );
     } else if (cell.notes.isNotEmpty && cellSize >= 24) {
       final notes = cell.notes.toList()..sort();
       final noteSize = (cellSize * 0.19).clamp(9.0, 15.0).toDouble();
-      final step = noteSize + 2;
-      final columns = math.max(1, ((cellSize - 16) / step).floor());
+      final step = noteSize + MurdokuTokens.space2;
+      final columns = math.max(
+        1,
+        ((cellSize - MurdokuTokens.boardMarkDoubleInset) / step).floor(),
+      );
       for (var i = 0; i < notes.length; i++) {
-        final x = rect.left + 8 + i % columns * step;
-        final y = rect.top + 8 + i ~/ columns * step;
-        if (y + noteSize > rect.bottom - 4) break;
+        final x = rect.left + MurdokuTokens.boardMarkInset + i % columns * step;
+        final y = rect.top + MurdokuTokens.boardMarkInset + i ~/ columns * step;
+        if (y + noteSize > rect.bottom - MurdokuTokens.space4) break;
         _drawOutlinedText(
           canvas,
           notes[i],
@@ -192,7 +189,10 @@ class BoardScenePainter extends CustomPainter {
   // The main board uses that SVG asset directly in BoardViewportStub.
   void _drawCrossShape(Canvas canvas, Rect rect) {
     final target = rect.deflate(
-      math.min(8, math.min(rect.width, rect.height) * 0.2),
+      math.min(
+        MurdokuTokens.boardMarkInset,
+        math.min(rect.width, rect.height) * 0.2,
+      ),
     );
     if (target.width <= 0 || target.height <= 0) return;
     final path = Path()
@@ -212,7 +212,7 @@ class BoardScenePainter extends CustomPainter {
     canvas.save();
     canvas.translate(target.left, target.top);
     canvas.scale(target.width / 32, target.height / 32);
-    canvas.drawPath(path, Paint()..color = Colors.black);
+    canvas.drawPath(path, Paint()..color = MurdokuTokens.boardMarkOutline);
     canvas.restore();
   }
 
@@ -227,8 +227,8 @@ class BoardScenePainter extends CustomPainter {
     for (final foreground in <Paint?>[
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 4
-        ..color = Colors.black,
+        ..strokeWidth = MurdokuTokens.paintStrokeWidth
+        ..color = MurdokuTokens.boardMarkOutline,
       null,
     ]) {
       final painter = TextPainter(
@@ -239,7 +239,7 @@ class BoardScenePainter extends CustomPainter {
             fontSize: fontSize,
             height: 1,
             fontWeight: FontWeight.w700,
-            color: foreground == null ? const Color(0xFFF7EFDA) : null,
+            color: foreground == null ? MurdokuTokens.boardMarkFill : null,
             foreground: foreground,
           ),
         ),

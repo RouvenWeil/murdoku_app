@@ -1,43 +1,66 @@
 import 'package:flutter/material.dart';
 
+import 'murdoku_tokens.dart';
+
 // Viewport-dependent mockup type scale, in Flutter logical pixels
 class MurdokuTypography {
   const MurdokuTypography(this.baseSize);
 
   final double baseSize;
 
+  static const String uiFontFamily = 'Inter';
+  static const String handwritingFontFamily = 'Caveat';
+  static const double compactReferenceWidth = 620;
+  static const double wideReferenceWidth = 896;
+  static const double compactBaseSize = 8;
+  static const double wideBaseSize = 12;
+  static const double lineLeading = 2;
+
   // 620dp and 896dp are the small and large mockup reference widths
   factory MurdokuTypography.forViewport(double width) {
-    final fraction = ((width - 620) / (896 - 620)).clamp(0.0, 1.0);
-    return MurdokuTypography(8 + 4 * fraction);
+    final fraction =
+        ((width - compactReferenceWidth) /
+                (wideReferenceWidth - compactReferenceWidth))
+            .clamp(0.0, 1.0);
+    return MurdokuTypography(
+      compactBaseSize + (wideBaseSize - compactBaseSize) * fraction,
+    );
   }
 
   TextStyle get body => TextStyle(
-    fontFamily: 'Inter',
+    fontFamily: uiFontFamily,
     fontSize: baseSize,
-    height: (baseSize + 2) / baseSize,
-    color: Colors.grey[200],
+    height: (baseSize + lineLeading) / baseSize,
+    color: MurdokuTokens.clueText,
   );
 
   TextStyle get heading => TextStyle(
-    fontFamily: 'Inter',
-    fontSize: baseSize + 2,
-    height: (baseSize + 4) / (baseSize + 2),
-    color: Colors.grey[200],
+    fontFamily: uiFontFamily,
+    fontSize: baseSize + lineLeading,
+    height: (baseSize + 2 * lineLeading) / (baseSize + lineLeading),
+    color: MurdokuTokens.clueText,
   );
 
   TextStyle get suspectName => TextStyle(
-    fontFamily: 'Caveat',
-    fontSize: baseSize - 2,
+    fontFamily: handwritingFontFamily,
+    fontSize: baseSize - lineLeading,
     height: 1,
     fontWeight: FontWeight.w700,
     color: Colors.white,
   );
 
+  TextStyle get toolLabel => body.copyWith(fontWeight: FontWeight.w700);
+
+  TextStyle get toolSubtitle => body.copyWith(
+    fontSize: (baseSize - lineLeading).clamp(6.0, 20.0).toDouble(),
+  );
+
+  TextStyle get toolHeading => heading.copyWith(fontWeight: FontWeight.w600);
+
   TextStyle get logoAddon => TextStyle(
-    fontFamily: 'Caveat',
-    fontSize: baseSize + 2,
+    fontFamily: handwritingFontFamily,
+    fontSize: baseSize + lineLeading,
     height: 1,
-    color: Colors.grey[200],
+    color: MurdokuTokens.clueText,
   );
 }

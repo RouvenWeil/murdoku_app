@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../domain/case_definition.dart';
 import '../../domain/character_definition.dart';
+import '../design/murdoku_assets.dart';
 import '../design/murdoku_tokens.dart';
 import '../design/murdoku_typography.dart';
 import 'clue_cards.dart';
@@ -67,7 +68,7 @@ class CluePanelStub extends StatelessWidget {
       onPin: () => onPinClue(id),
     );
     return placedCharacterIds.contains(character.id)
-        ? Opacity(opacity: 0.65, child: card)
+        ? Opacity(opacity: MurdokuTokens.placedClueOpacity, child: card)
         : card;
   }
 
@@ -97,28 +98,36 @@ class CluePanelStub extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+          padding: const EdgeInsets.fromLTRB(
+            MurdokuTokens.space8,
+            MurdokuTokens.space8,
+            MurdokuTokens.space8,
+            MurdokuTokens.space4,
+          ),
           child: Row(
             children: [
               IconButton(
                 onPressed: onBack,
                 tooltip: 'Back to cases',
-                iconSize: 48,
+                iconSize: MurdokuTokens.minTouchSize,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints.tightFor(
-                  width: 48,
-                  height: 48,
+                  width: MurdokuTokens.minTouchSize,
+                  height: MurdokuTokens.minTouchSize,
                 ),
                 icon: SvgPicture.asset(
-                  'assets/ui/IconButton-Back.svg',
-                  width: 48,
-                  height: 48,
+                  MurdokuAssets.back,
+                  width: MurdokuTokens.minTouchSize,
+                  height: MurdokuTokens.minTouchSize,
                   excludeFromSemantics: true,
                 ),
               ),
               const Expanded(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MurdokuTokens.space8,
+                    vertical: MurdokuTokens.space4,
+                  ),
                   child: MurdokuBrand(),
                 ),
               ),
@@ -126,7 +135,12 @@ class CluePanelStub extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
+          padding: const EdgeInsets.fromLTRB(
+            MurdokuTokens.space8,
+            MurdokuTokens.space4,
+            MurdokuTokens.space8,
+            MurdokuTokens.space12,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -136,7 +150,7 @@ class CluePanelStub extends StatelessWidget {
                   style: typography.heading,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: MurdokuTokens.space8),
               Text('Timer —', style: typography.body),
             ],
           ),
@@ -156,7 +170,7 @@ class CluePanelStub extends StatelessWidget {
                         key: const ValueKey('pinned-clue-region'),
                         padding: const EdgeInsets.fromLTRB(
                           MurdokuTokens.panelInset,
-                          4,
+                          MurdokuTokens.space4,
                           MurdokuTokens.panelInset,
                           0,
                         ),
@@ -165,19 +179,26 @@ class CluePanelStub extends StatelessWidget {
                     ),
                   if (pinned != null)
                     const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: MurdokuTokens.space8,
+                      ),
                       child: Divider(height: 1),
                     ),
                   Expanded(
                     child: ListView(
                       key: const ValueKey('unpinned-clue-list'),
-                      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                      padding: const EdgeInsets.fromLTRB(
+                        MurdokuTokens.space8,
+                        MurdokuTokens.space4,
+                        MurdokuTokens.space8,
+                        MurdokuTokens.space8,
+                      ),
                       children: [
                         if (caseData.generalClues.isNotEmpty) ...[
                           for (var i = 0; i < caseData.generalClues.length; i++)
                             if (pinnedClueId != generalId(i))
                               _generalCard(i, typography),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: MurdokuTokens.space8),
                         ],
                         for (final character in caseData.characters)
                           if (!placedCharacterIds.contains(character.id) &&

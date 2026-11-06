@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../design/murdoku_assets.dart';
+import '../design/murdoku_tokens.dart';
 import '../design/murdoku_typography.dart';
 
 // Header lockup shared between the catalogue and case view
@@ -24,14 +26,19 @@ class MurdokuBrand extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: EdgeInsetsGeometry.fromLTRB(0, 8, 0, 0),
+                padding: EdgeInsetsGeometry.fromLTRB(
+                  0,
+                  MurdokuTokens.space8,
+                  0,
+                  0,
+                ),
                 child: SvgPicture.asset(
-                  'assets/ui/Murdoku-Logo.svg',
+                  MurdokuAssets.logo,
                   height: logoHeight,
                   excludeFromSemantics: true,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: MurdokuTokens.space8),
               Text(
                 'by Manuel Garand',
                 maxLines: 1,

@@ -6,6 +6,7 @@ import '../../domain/case_definition.dart';
 import '../../domain/solution_evaluation.dart';
 import '../board/board_scene_painter.dart';
 import '../board/board_viewport_geometry.dart';
+import '../design/murdoku_assets.dart';
 import '../design/murdoku_tokens.dart';
 import '../design/murdoku_typography.dart';
 import 'murdoku_buttons.dart';
@@ -25,7 +26,7 @@ class ToolPanelStub extends StatelessWidget {
     this.origin = const (row: 0, column: 0),
     this.visibleRows = 1,
     this.visibleColumns = 1,
-    this.boardCellSize = 48,
+    this.boardCellSize = MurdokuTokens.minTouchSize,
     this.boardPan = Offset.zero,
     this.onMinimapNavigate,
     this.boardState,
@@ -84,7 +85,7 @@ class ToolPanelStub extends StatelessWidget {
       void navigate(Offset point) =>
           onMinimapNavigate?.call(geometry.centerOnMinimap(point, mapSize));
       return Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(MurdokuTokens.panelInset),
         child: Column(
           children: [
             SizedBox(
@@ -124,7 +125,7 @@ class ToolPanelStub extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: MurdokuTokens.space8),
             if (arrangement == ToolPanelArrangement.horizontal) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -134,7 +135,7 @@ class ToolPanelStub extends StatelessWidget {
                   _tool('Undo', typography, iconOnly: true),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: MurdokuTokens.space8),
             ] else if (arrangement == ToolPanelArrangement.stacked) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -143,16 +144,16 @@ class ToolPanelStub extends StatelessWidget {
                   _tool('Erase', typography, iconOnly: true),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: MurdokuTokens.space8),
               _tool('Undo', typography, textOnly: true),
-              const SizedBox(height: 8),
+              const SizedBox(height: MurdokuTokens.space8),
             ] else if (arrangement == ToolPanelArrangement.singleColumn) ...[
               _tool('Cross', typography, textOnly: true),
-              const SizedBox(height: 8),
+              const SizedBox(height: MurdokuTokens.space8),
               _tool('Erase', typography, textOnly: true),
-              const SizedBox(height: 8),
+              const SizedBox(height: MurdokuTokens.space8),
               _tool('Undo', typography, textOnly: true),
-              const SizedBox(height: 8),
+              const SizedBox(height: MurdokuTokens.space8),
             ],
             MurdokuSubmitButton(
               onPressed: isSolved ? onReplay : onSubmit,
@@ -165,21 +166,18 @@ class ToolPanelStub extends StatelessWidget {
     }
 
     return ListView(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(MurdokuTokens.panelInset),
       children: [
-        Text(
-          'Tools',
-          style: typography.heading.copyWith(fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
+        Text('Tools', style: typography.toolHeading),
+        const SizedBox(height: MurdokuTokens.space8),
         _tool('Cross', typography),
-        const SizedBox(height: 8),
+        const SizedBox(height: MurdokuTokens.space8),
         _tool('Note', typography),
-        const SizedBox(height: 8),
+        const SizedBox(height: MurdokuTokens.space8),
         _tool('Erase', typography),
-        const SizedBox(height: 8),
+        const SizedBox(height: MurdokuTokens.space8),
         _tool('Undo', typography),
-        const SizedBox(height: 12),
+        const SizedBox(height: MurdokuTokens.space12),
         MurdokuSubmitButton(
           onPressed: isSolved ? onReplay : onSubmit,
           typography: typography,
@@ -204,9 +202,9 @@ class ToolPanelStub extends StatelessWidget {
     };
     final subtitle = kind == 'Erase' ? 'hold to reset Progress' : null;
     final svg = switch (kind) {
-      'Cross' => 'assets/ui/Vector-CrossOut.svg',
-      'Erase' => 'assets/ui/Vector-Eraser.svg',
-      'Undo' => 'assets/ui/Vector-Undo.svg',
+      'Cross' => MurdokuAssets.crossTool,
+      'Erase' => MurdokuAssets.eraseTool,
+      'Undo' => MurdokuAssets.undoTool,
       _ => null,
     };
     final tool = switch (kind) {
@@ -273,7 +271,7 @@ class _HoldToClearButton extends StatefulWidget {
 
 class _HoldToClearButtonState extends State<_HoldToClearButton>
     with SingleTickerProviderStateMixin {
-  static const holdDuration = Duration(milliseconds: 950);
+  static const holdDuration = MurdokuTokens.resetHoldDuration;
   late final AnimationController _hold =
       AnimationController(vsync: this, duration: holdDuration)
         ..addStatusListener((status) {
@@ -374,7 +372,9 @@ class _ClearProgressPainter extends CustomPainter {
     if (progress == 0) {
       return;
     }
-    final radius = (size.shortestSide / 2 - 4).clamp(2.0, 1000.0).toDouble();
+    final radius = (size.shortestSide / 2 - MurdokuTokens.space4)
+        .clamp(2.0, 1000.0)
+        .toDouble();
     canvas.drawArc(
       Rect.fromCircle(center: size.center(Offset.zero), radius: radius),
       -1.5707963267948966,
@@ -382,7 +382,7 @@ class _ClearProgressPainter extends CustomPainter {
       false,
       Paint()
         ..color = MurdokuTokens.selected
-        ..strokeWidth = 4
+        ..strokeWidth = MurdokuTokens.paintStrokeWidth
         ..style = PaintingStyle.stroke,
     );
   }

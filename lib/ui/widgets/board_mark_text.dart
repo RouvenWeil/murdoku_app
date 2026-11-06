@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../design/murdoku_tokens.dart';
+
 // Outlined note/placement glyph; the parent board defines cell geometry
 class BoardMarkText extends StatelessWidget {
   const BoardMarkText({super.key, required this.value, required this.style});
@@ -10,9 +12,9 @@ class BoardMarkText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final outline = Paint()
-      ..color = Colors.black
+      ..color = MurdokuTokens.boardMarkOutline
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4;
+      ..strokeWidth = MurdokuTokens.paintStrokeWidth;
     return Semantics(
       label: value,
       child: ExcludeSemantics(

@@ -27,7 +27,7 @@ class CharacterProfile extends StatelessWidget {
       height: MurdokuTokens.profileFrameHeight,
       decoration: BoxDecoration(
         color: Colors.black,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(MurdokuTokens.profileCornerRadius),
         boxShadow: [
           MurdokuTokens.cardShadow,
           if (isSelected) MurdokuTokens.selectionShadow,
@@ -60,7 +60,7 @@ class CharacterProfile extends StatelessWidget {
               dimension: MurdokuTokens.portraitWidth,
               child: assetPath == null
                   ? const DecoratedBox(
-                      decoration: BoxDecoration(color: Color(0xFF8ECEEB)),
+                      decoration: BoxDecoration(color: MurdokuTokens.selected),
                       child: Center(child: Icon(Icons.person)),
                     )
                   : Image.asset(

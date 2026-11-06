@@ -2,12 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../domain/case_definition.dart';
 import '../../domain/board_state.dart';
+import '../../domain/case_definition.dart';
 import '../../session/game_session.dart';
-import '../session/game_progress_store.dart';
-import '../session/clue_pin_store.dart';
 import '../board/board_viewport_geometry.dart';
+import '../design/murdoku_tokens.dart';
+import '../session/clue_pin_store.dart';
+import '../session/game_progress_store.dart';
 import '../widgets/board_viewport_stub.dart';
 import '../widgets/clue_panel_stub.dart';
 import '../widgets/tool_panel_stub.dart';
@@ -29,17 +30,21 @@ class CaseScreenLayout {
     required this.minimapHeight,
   });
 
-  static const double minimumCellSize = 48;
-  static const double boardMargin = 8;
+  static const double minimumCellSize = MurdokuTokens.minTouchSize;
+  static const double boardMargin = MurdokuTokens.panelInset;
   static const double dividerWidth = 1;
   static const double minimumClueWidth = 220;
   static const double preferredClueWidth = 340;
   static const double minimumFullToolWidth = 112;
   static const double preferredFullToolWidth = 172;
-  static const double panelPadding = 8;
-  static const double controlGap = 8;
+  static const double panelPadding = MurdokuTokens.panelInset;
+  static const double controlGap = MurdokuTokens.space8;
   static const double minimumMinimapSize = 96;
   static const double preferredMinimapSize = 128;
+  static const double preferredHorizontalToolWidth = 192;
+  static const double preferredStackedToolWidth = 136;
+  static const double preferredSingleColumnToolWidth = 128;
+  static const double comparisonEpsilon = 0.000001;
 
   final bool isPartial;
   final ToolPanelArrangement toolArrangement;
@@ -127,13 +132,14 @@ class CaseScreenLayout {
           math.max(controlWidth, minimumMapWidth) + 2 * panelPadding;
       final chromeHeight =
           controlRows * (minimumCellSize + controlGap) + 2 * panelPadding;
-      if (height + 0.000001 < minimumMapHeight + chromeHeight) continue;
+      if (height + comparisonEpsilon < minimumMapHeight + chromeHeight)
+        continue;
 
       final squareSide = math.min(
         width - minimumClueWidth - minimumToolWidth - separators - boardPadding,
         boardHeightLimit,
       );
-      if (squareSide + 0.000001 < minimumCellSize) continue;
+      if (squareSide + comparisonEpsilon < minimumCellSize) continue;
 
       // Settled partial views show a square integer count of complete cells
       final count = math.min(
@@ -146,9 +152,9 @@ class CaseScreenLayout {
         arrangement: arrangement,
         minimumToolWidth: minimumToolWidth,
         preferredToolWidth: math.max(minimumToolWidth, switch (arrangement) {
-          ToolPanelArrangement.horizontal => 192.0,
-          ToolPanelArrangement.stacked => 136.0,
-          ToolPanelArrangement.singleColumn => 128.0,
+          ToolPanelArrangement.horizontal => preferredHorizontalToolWidth,
+          ToolPanelArrangement.stacked => preferredStackedToolWidth,
+          ToolPanelArrangement.singleColumn => preferredSingleColumnToolWidth,
           ToolPanelArrangement.expanded => throw StateError(
             'Not a compact mode',
           ),
@@ -162,7 +168,7 @@ class CaseScreenLayout {
       if (best == null ||
           candidate.count > best.count ||
           (candidate.count == best.count &&
-              candidate.squareSide > best.squareSide + 0.000001)) {
+              candidate.squareSide > best.squareSide + comparisonEpsilon)) {
         best = candidate;
       }
     }
@@ -471,22 +477,22 @@ class _CaseScreenState extends State<CaseScreen> {
             if (orientation == Orientation.portrait) {
               return Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(MurdokuTokens.space24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.screen_rotation, size: 48),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: MurdokuTokens.space16),
                       Text(
                         'Rotate to landscape',
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: MurdokuTokens.space8),
                       Text(
                         '${widget.caseData.title} uses a landscape layout',
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: MurdokuTokens.space16),
                       OutlinedButton(
                         onPressed: () => Navigator.of(context).maybePop(),
                         child: const Text('Back to cases'),
@@ -508,7 +514,7 @@ class _CaseScreenState extends State<CaseScreen> {
                 if (layout == null) {
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(MurdokuTokens.panelInset),
                       child: Text(
                         'Not enough space for accessible board controls',
                         textAlign: TextAlign.center,

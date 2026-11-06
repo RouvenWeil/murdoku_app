@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../data/case_loader.dart';
 import '../../domain/case_definition.dart';
+import '../design/murdoku_tokens.dart';
 import '../session/game_progress_store.dart';
 import '../widgets/murdoku_brand.dart';
 import 'case_screen.dart';
@@ -80,7 +81,7 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text('Case files could not be loaded'),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: MurdokuTokens.space12),
                     OutlinedButton(
                       onPressed: () => setState(_loadCases),
                       child: const Text('Retry'),
@@ -103,13 +104,13 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
                     ? 2
                     : 3;
                 return GridView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(MurdokuTokens.space16),
                   itemCount: cases.length,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: columns,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    mainAxisExtent: 144,
+                    crossAxisSpacing: MurdokuTokens.space12,
+                    mainAxisSpacing: MurdokuTokens.space12,
+                    mainAxisExtent: MurdokuTokens.caseCardHeight,
                   ),
                   itemBuilder: (context, index) {
                     final caseData = cases[index];
@@ -120,7 +121,7 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
                       child: InkWell(
                         onTap: _openingCase ? null : () => _openCase(caseData),
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(MurdokuTokens.space16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -135,15 +136,15 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
                                 '${caseData.rows} × ${caseData.columns}  ·  '
                                 '${caseData.difficulty.replaceAll('-', ' ')}',
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: MurdokuTokens.space4),
                               Row(
                                 children: [
                                   if (solved) ...[
                                     const Icon(
                                       Icons.check_circle_outline,
-                                      size: 18,
+                                      size: MurdokuTokens.caseStatusIconSize,
                                     ),
-                                    const SizedBox(width: 6),
+                                    const SizedBox(width: MurdokuTokens.space6),
                                     const Text('Solved'),
                                   ] else
                                     const Text('Open case'),

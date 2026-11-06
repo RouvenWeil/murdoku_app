@@ -26,7 +26,10 @@ class GeneralClueCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: MurdokuTokens.cardGap, right: 4),
+      padding: const EdgeInsets.only(
+        bottom: MurdokuTokens.cardGap,
+        right: MurdokuTokens.space4,
+      ),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: MurdokuTokens.generalAccent,
@@ -34,7 +37,7 @@ class GeneralClueCard extends StatelessWidget {
           boxShadow: const [MurdokuTokens.cardShadow],
         ),
         child: Padding(
-          padding: const EdgeInsets.only(left: 4),
+          padding: const EdgeInsets.only(left: MurdokuTokens.space4),
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: MurdokuTokens.generalCard,
@@ -44,7 +47,10 @@ class GeneralClueCard extends StatelessWidget {
               position: DecorationPosition.foreground,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(MurdokuTokens.cardRadius),
-                border: Border.all(color: MurdokuTokens.cardOutline, width: 2),
+                border: Border.all(
+                  color: MurdokuTokens.cardOutline,
+                  width: MurdokuTokens.borderWidth,
+                ),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(MurdokuTokens.cardRadius),
@@ -56,7 +62,7 @@ class GeneralClueCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.all(4.0),
+                          padding: const EdgeInsets.all(MurdokuTokens.space4),
                           child: ClueText(
                             text: clue,
                             style: typography.body,
@@ -144,7 +150,7 @@ class CharacterClueCard extends StatelessWidget {
                       ),
                       border: Border.all(
                         color: MurdokuTokens.cardOutline,
-                        width: 2,
+                        width: MurdokuTokens.borderWidth,
                       ),
                     ),
                     child: ClipRRect(
@@ -163,10 +169,10 @@ class CharacterClueCard extends StatelessWidget {
                                 onTap: onSelect,
                                 child: Padding(
                                   padding: const EdgeInsets.fromLTRB(
-                                    12,
-                                    4,
-                                    4,
-                                    4,
+                                    MurdokuTokens.space12,
+                                    MurdokuTokens.space4,
+                                    MurdokuTokens.space4,
+                                    MurdokuTokens.space4,
                                   ),
                                   child: ClueText(
                                     text: character.clue,
@@ -202,7 +208,9 @@ class CharacterClueCard extends StatelessWidget {
                   child: InkWell(
                     key: ValueKey('select-character-profile-${character.id}'),
                     onTap: onSelect,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(
+                      MurdokuTokens.profileCornerRadius,
+                    ),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: CharacterProfile(

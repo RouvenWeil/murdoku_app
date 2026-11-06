@@ -9,6 +9,8 @@ import '../../domain/case_definition.dart';
 import '../../domain/solution_evaluation.dart';
 import '../board/board_scene_painter.dart';
 import '../board/board_viewport_geometry.dart';
+import '../design/murdoku_assets.dart';
+import '../design/murdoku_tokens.dart';
 
 // Gameplay input and navigation use the same row-first coordinate geometry
 class BoardViewportStub extends StatefulWidget {
@@ -47,7 +49,7 @@ class BoardViewportStub extends StatefulWidget {
 
 class _BoardViewportStubState extends State<BoardViewportStub>
     with TickerProviderStateMixin {
-  static const placementHoldDuration = Duration(milliseconds: 650);
+  static const placementHoldDuration = MurdokuTokens.placementHoldDuration;
 
   final Map<int, Offset> _pointers = {};
   Offset? _lastCentroid;
@@ -72,7 +74,7 @@ class _BoardViewportStubState extends State<BoardViewportStub>
     _snapController =
         AnimationController(
             vsync: this,
-            duration: const Duration(milliseconds: 180),
+            duration: MurdokuTokens.boardSnapDuration,
           )
           ..addListener(() {
             if (_pendingOrigin != null) {
@@ -318,13 +320,13 @@ class _BoardViewportStubState extends State<BoardViewportStub>
         result.add(
           Positioned(
             key: ValueKey('board-cross-$row-$col'),
-            left: left + 8,
-            top: top + 8,
-            width: widget.cellSize - 16,
-            height: widget.cellSize - 16,
+            left: left + MurdokuTokens.boardMarkInset,
+            top: top + MurdokuTokens.boardMarkInset,
+            width: widget.cellSize - MurdokuTokens.boardMarkDoubleInset,
+            height: widget.cellSize - MurdokuTokens.boardMarkDoubleInset,
             child: IgnorePointer(
               child: SvgPicture.asset(
-                'assets/ui/Vector-Cross.svg',
+                MurdokuAssets.boardCross,
                 fit: BoxFit.fill,
                 excludeFromSemantics: true,
               ),
@@ -340,7 +342,7 @@ class _BoardViewportStubState extends State<BoardViewportStub>
   Widget build(BuildContext context) {
     final geometry = _geometry;
     return Padding(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(MurdokuTokens.panelInset),
       child: Center(
         child: ClipRect(
           child: SizedBox(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../design/murdoku_assets.dart';
 import '../design/murdoku_tokens.dart';
 
 class CluePinButton extends StatelessWidget {
@@ -32,9 +33,9 @@ class CluePinButton extends StatelessWidget {
               excludeFromSemantics: true,
               onTap: onPressed,
               child: SvgPicture.asset(
-                isPinned ? 'assets/ui/Pinned.svg' : 'assets/ui/UnPinned.svg',
-                width: 48,
-                height: 48,
+                isPinned ? MurdokuAssets.pinned : MurdokuAssets.unpinned,
+                width: MurdokuTokens.minTouchSize,
+                height: MurdokuTokens.minTouchSize,
                 excludeFromSemantics: true,
               ),
             ),
