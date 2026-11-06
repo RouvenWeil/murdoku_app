@@ -7,7 +7,7 @@ import '../../domain/case_definition.dart';
 import '../../domain/solution_evaluation.dart';
 import '../design/murdoku_tokens.dart';
 
-// Shared scene renderer for the navigable board and whole-board minimap
+// Player marks stay in cell coordinates; the static scene may come from a PNG.
 class BoardScenePainter extends CustomPainter {
   const BoardScenePainter({
     required this.caseData,
@@ -21,6 +21,8 @@ class BoardScenePainter extends CustomPainter {
     this.holdCell,
     this.holdProgress = 0,
     this.paintCrosses = true,
+    this.paintStaticScene = true,
+    this.paintAnnotations = true,
   });
 
   final CaseDefinition caseData;
@@ -34,6 +36,8 @@ class BoardScenePainter extends CustomPainter {
   final CellPosition? holdCell;
   final double holdProgress;
   final bool paintCrosses;
+  final bool paintStaticScene;
+  final bool paintAnnotations;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -63,33 +67,35 @@ class BoardScenePainter extends CustomPainter {
         }
 
         final roomId = caseData.roomGrid[row][column];
-        fill.color = roomId == null
-            ? MurdokuTokens.absentCell
-            : MurdokuTokens.roomColors[roomId.abs() %
-                  MurdokuTokens.roomColors.length];
-        canvas.drawRect(rect, fill);
-        canvas.drawRect(rect, border);
-        if (roomId == null) {
-          continue;
+        // The PNG already has room borders, objects and labels. Drawing the
+        // generated walls again would cover the artwork and double the grid.
+        if (paintStaticScene) {
+          fill.color = roomId == null
+              ? MurdokuTokens.absentCell
+              : MurdokuTokens.roomColors[roomId.abs() %
+                    MurdokuTokens.roomColors.length];
+          canvas.drawRect(rect, fill);
+          canvas.drawRect(rect, border);
+          if (roomId == null) continue;
+          if (caseData.objectGrid[row][column] != null) {
+            canvas.drawCircle(rect.center, cellSize * 0.16, marker);
+          }
+          if (column == 0 || caseData.roomGrid[row][column - 1] != roomId) {
+            canvas.drawLine(rect.topLeft, rect.bottomLeft, wall);
+          }
+          if (row == 0 || caseData.roomGrid[row - 1][column] != roomId) {
+            canvas.drawLine(rect.topLeft, rect.topRight, wall);
+          }
+          if (column == caseData.columns - 1 ||
+              caseData.roomGrid[row][column + 1] != roomId) {
+            canvas.drawLine(rect.topRight, rect.bottomRight, wall);
+          }
+          if (row == caseData.rows - 1 ||
+              caseData.roomGrid[row + 1][column] != roomId) {
+            canvas.drawLine(rect.bottomLeft, rect.bottomRight, wall);
+          }
         }
-
-        if (caseData.objectGrid[row][column] != null) {
-          canvas.drawCircle(rect.center, cellSize * 0.16, marker);
-        }
-        if (column == 0 || caseData.roomGrid[row][column - 1] != roomId) {
-          canvas.drawLine(rect.topLeft, rect.bottomLeft, wall);
-        }
-        if (row == 0 || caseData.roomGrid[row - 1][column] != roomId) {
-          canvas.drawLine(rect.topLeft, rect.topRight, wall);
-        }
-        if (column == caseData.columns - 1 ||
-            caseData.roomGrid[row][column + 1] != roomId) {
-          canvas.drawLine(rect.topRight, rect.bottomRight, wall);
-        }
-        if (row == caseData.rows - 1 ||
-            caseData.roomGrid[row + 1][column] != roomId) {
-          canvas.drawLine(rect.bottomLeft, rect.bottomRight, wall);
-        }
+        if (roomId == null || !paintAnnotations) continue;
 
         if (boardState != null &&
             caseData.canOccupy((row: row, column: column))) {
@@ -149,6 +155,19 @@ class BoardScenePainter extends CustomPainter {
   void _paintMarks(Canvas canvas, Rect rect, CellState cell) {
     if (cell.crossed && paintCrosses) {
       _drawCrossShape(canvas, rect);
+    }
+
+    // On the 16×16 minimap there isn't room for tiny initials or a note grid.
+    // A dot still shows which cells the player has touched.
+    if (cellSize < 14) {
+      if (cell.characterId != null || cell.notes.isNotEmpty) {
+        canvas.drawCircle(
+          rect.center,
+          math.max(1.0, cellSize * 0.25),
+          Paint()..color = const Color(0xFFF7EFDA),
+        );
+      }
+      return;
     }
 
     final character = cell.characterId;
@@ -265,5 +284,7 @@ class BoardScenePainter extends CustomPainter {
       old.feedbackByCell != feedbackByCell ||
       old.holdCell != holdCell ||
       old.holdProgress != holdProgress ||
-      old.paintCrosses != paintCrosses;
+      old.paintCrosses != paintCrosses ||
+      old.paintStaticScene != paintStaticScene ||
+      old.paintAnnotations != paintAnnotations;
 }

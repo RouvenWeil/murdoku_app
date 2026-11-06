@@ -28,7 +28,9 @@ abstract final class MurdokuTokens {
   static const double selectionSpread = 4;
   static const double placedClueOpacity = 0.65;
   static const double disabledToolOpacity = 0.4;
-  static const double caseCardHeight = 144;
+  // Previews now have enough room for the case name and progress label.
+  static const double caseCardHeight = 192;
+  static const double casePreviewWidth = 132;
   // Protects full-size Submit labels at large Android font settings.
   static const double enlargedTextCompactToolContentWidth = 128;
 

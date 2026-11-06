@@ -10,7 +10,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../domain/board_state.dart';
 import '../../domain/case_definition.dart';
 import '../../domain/solution_evaluation.dart';
-import '../board/board_scene_painter.dart';
+import '../board/board_scene.dart';
 import '../board/board_viewport_geometry.dart';
 import '../design/murdoku_assets.dart';
 import '../design/murdoku_tokens.dart';
@@ -487,19 +487,17 @@ class _BoardViewportStubState extends State<BoardViewportStub>
               onPointerCancel: _onUp,
               child: AnimatedBuilder(
                 animation: Listenable.merge([_snapController, _holdController]),
-                builder: (context, child) => CustomPaint(
-                  painter: BoardScenePainter(
-                    caseData: widget.caseData,
-                    cellSize: widget.cellSize,
-                    originRow: geometry.origin.row,
-                    originColumn: geometry.origin.column,
-                    translation: _paintShift,
-                    boardState: widget.boardState,
-                    feedbackByCell: widget.feedbackByCell,
-                    holdCell: _holdController.isAnimating ? _heldCell : null,
-                    holdProgress: _holdController.value,
-                    paintCrosses: false,
-                  ),
+                builder: (context, child) => BoardScene(
+                  caseData: widget.caseData,
+                  cellSize: widget.cellSize,
+                  originRow: geometry.origin.row,
+                  originColumn: geometry.origin.column,
+                  translation: _paintShift,
+                  boardState: widget.boardState,
+                  feedbackByCell: widget.feedbackByCell,
+                  holdCell: _holdController.isAnimating ? _heldCell : null,
+                  holdProgress: _holdController.value,
+                  paintCrosses: false,
                   child: Stack(
                     clipBehavior: Clip.hardEdge,
                     children: [

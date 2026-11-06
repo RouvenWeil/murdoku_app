@@ -126,6 +126,8 @@ void main() {
         find.byKey(const ValueKey('case-heading-stacked')),
         findsOneWidget,
       );
+      // The whole clue column scrolls at this size instead of losing its list.
+      expect(find.byKey(const ValueKey('clue-compact-scroll')), findsOneWidget);
       expect(find.byType(MurdokuSubmitButton), findsOneWidget);
       expect(tester.takeException(), isNull);
     },

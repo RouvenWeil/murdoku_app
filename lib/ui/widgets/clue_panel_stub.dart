@@ -46,12 +46,10 @@ class CluePanelStub extends StatelessWidget {
   static String characterId(String id) => 'character:$id';
 
   String? _portraitFor(CharacterDefinition character) {
-    if (character.imageAsset != null) return character.imageAsset;
-    if (caseData.id == 'car-repair' &&
-        const {'A', 'B', 'C', 'D', 'E', 'V'}.contains(character.id)) {
-      return 'assets/characters/car-repair/${character.id.toLowerCase()}.png';
-    }
-    return null;
+    // JSON wins if a case supplies its own portrait. Otherwise use only the
+    // two portrait sets I actually have, and keep the fallback for the rest.
+    return character.imageAsset ??
+        MurdokuAssets.portrait(caseData.id, character.id);
   }
 
   Widget _generalCard(int index, MurdokuTypography typography) {
@@ -108,6 +106,66 @@ class CluePanelStub extends StatelessWidget {
     final typography = MurdokuTypography.forViewport(
       MediaQuery.sizeOf(context).width,
     );
+    // At 200% text on a short landscape screen the fixed header can take
+    // almost the entire clue column. Let the whole column scroll instead of
+    // squeezing the clues down to an empty viewport.
+    final veryShortWithLargeText =
+        MediaQuery.sizeOf(context).height < 300 &&
+        MediaQuery.textScalerOf(context).scale(14) > 20;
+    if (veryShortWithLargeText) {
+      final pinned = _pinnedCard(typography);
+      return SingleChildScrollView(
+        key: const ValueKey('clue-compact-scroll'),
+        padding: const EdgeInsets.all(MurdokuTokens.space8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  tooltip: 'Back to cases',
+                  onPressed: onBack,
+                  icon: SvgPicture.asset(
+                    MurdokuAssets.back,
+                    width: MurdokuTokens.minTouchSize,
+                    excludeFromSemantics: true,
+                  ),
+                ),
+                const Expanded(child: MurdokuBrand()),
+              ],
+            ),
+            Column(
+              key: const ValueKey('case-heading-stacked'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(caseData.title, style: typography.heading),
+                Text('Timer ${formatElapsed(elapsed)}', style: typography.body),
+              ],
+            ),
+            const SizedBox(height: MurdokuTokens.space8),
+            if (pinned != null) ...[pinned, const Divider()],
+            // Eager children here are intentional: a short viewport still
+            // needs a reachable clue list, even before the first scroll.
+            Column(
+              key: const ValueKey('unpinned-clue-list'),
+              children: [
+                for (var i = 0; i < caseData.generalClues.length; i++)
+                  if (pinnedClueId != generalId(i)) _generalCard(i, typography),
+                for (final character in caseData.characters)
+                  if (!placedCharacterIds.contains(character.id) &&
+                      pinnedClueId != characterId(character.id))
+                    _characterCard(character, typography),
+                for (final character in caseData.characters)
+                  if (placedCharacterIds.contains(character.id) &&
+                      pinnedClueId != characterId(character.id))
+                    _characterCard(character, typography),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
         Padding(

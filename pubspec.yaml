@@ -69,6 +69,8 @@ flutter:
     - assets/cases/
     - assets/characters/
     - assets/characters/car-repair/
+    - assets/characters/horse-with-no-name/
+    - assets/boards/
     - assets/ui/
     - assets/objects/
 

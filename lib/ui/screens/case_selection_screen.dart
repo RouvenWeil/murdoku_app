@@ -9,6 +9,8 @@ import '../design/murdoku_tokens.dart';
 import '../design/murdoku_typography.dart';
 import '../session/game_progress_store.dart';
 import '../widgets/murdoku_brand.dart';
+import '../widgets/case_catalogue_card.dart';
+import '../widgets/case_preview.dart';
 import 'case_screen.dart';
 
 class CaseSelectionScreen extends StatefulWidget {
@@ -175,9 +177,6 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
             }
 
             final cases = snapshot.data!;
-            final typography = MurdokuTypography.forViewport(
-              MediaQuery.sizeOf(context).width,
-            );
             final textScaleFactor =
                 MediaQuery.textScalerOf(context)
                     .scale(MurdokuTypography.compactBodySize) /
@@ -205,85 +204,28 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
                   ),
                   itemBuilder: (context, index) {
                     final caseData = cases[index];
-                    final solved =
-                        _progressStore.read(caseData.id)?.isSolved ?? false;
-                    final failed =
+                    final progress = _progressStore.read(caseData.id);
+                    final unavailable =
                         _progressStore.status(caseData.id) ==
                         ProgressLoadStatus.failed;
-                    final recovered =
-                        _progressStore.status(caseData.id) ==
-                        ProgressLoadStatus.recovered;
-                    final unsaved =
-                        _progressStore.saveError(caseData.id) != null;
-                    return Card(
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: _openingCase
-                            ? null
-                            : failed
-                            ? () => _showRecovery(caseData)
-                            : () => _openCase(caseData),
-                        child: Padding(
-                          padding: const EdgeInsets.all(MurdokuTokens.space16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                caseData.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: typography.catalogTitle,
-                              ),
-                              const Spacer(),
-                              Text(
-                                '${caseData.rows} × ${caseData.columns}  ·  '
-                                '${caseData.difficulty.replaceAll('-', ' ')}',
-                              ),
-                              const SizedBox(height: MurdokuTokens.space4),
-                              if (failed)
-                                const Row(
-                                  children: [
-                                    Icon(Icons.warning_amber_rounded, size: 18),
-                                    SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        'Save unavailable · Tap to recover',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              else
-                                Row(
-                                  children: [
-                                    if (unsaved)
-                                      Text(
-                                        solved
-                                            ? 'Solved · Not saved'
-                                            : 'Not saved · Retry in case',
-                                      )
-                                    else if (solved) ...[
-                                      const Icon(
-                                        Icons.check_circle_outline,
-                                        size: MurdokuTokens.caseStatusIconSize,
-                                      ),
-                                      const SizedBox(
-                                        width: MurdokuTokens.space6,
-                                      ),
-                                      const Text('Solved'),
-                                    ] else if (recovered)
-                                      const Text('Recovered saved progress')
-                                    else
-                                      const Text('Open case'),
-                                    const Spacer(),
-                                    const Icon(Icons.arrow_forward_rounded),
-                                  ],
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    final status = caseAttemptStatus(
+                      progress,
+                      unavailable: unavailable,
+                    );
+                    // The catalogue reads the current attempt. PLAY AGAIN
+                    // clears its solved card rather than leaving a trophy.
+                    return CaseCatalogueCard(
+                      caseData: caseData,
+                      progress: progress,
+                      status: status,
+                      unsaved:
+                          _progressStore.hasUnsavedChanges(caseData.id) &&
+                          _progressStore.saveError(caseData.id) != null,
+                      onOpen: _openingCase
+                          ? null
+                          : unavailable
+                          ? () => _showRecovery(caseData)
+                          : () => _openCase(caseData),
                     );
                   },
                 );

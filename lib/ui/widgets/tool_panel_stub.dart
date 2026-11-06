@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../domain/board_state.dart';
 import '../../domain/case_definition.dart';
 import '../../domain/solution_evaluation.dart';
-import '../board/board_scene_painter.dart';
+import '../board/board_scene.dart';
 import '../board/board_viewport_geometry.dart';
 import '../design/murdoku_assets.dart';
 import '../design/murdoku_tokens.dart';
@@ -114,18 +114,17 @@ class ToolPanelStub extends StatelessWidget {
                     decoration: BoxDecoration(
                       border: Border.all(color: Theme.of(context).dividerColor),
                     ),
-                    child: CustomPaint(
-                      painter: BoardScenePainter(
-                        caseData: caseData,
-                        cellSize: minimapWidth / caseData.columns,
-                        boardState: boardState,
-                        feedbackByCell: feedbackByCell,
-                        viewportOutline: geometry.viewportOnMinimap(
-                          mapSize,
-                          drag: boardPan,
-                        ),
+                    // Same board artwork and cell positions as the main view.
+                    // The viewport box is the only minimap-only layer.
+                    child: BoardScene(
+                      caseData: caseData,
+                      cellSize: minimapWidth / caseData.columns,
+                      boardState: boardState,
+                      feedbackByCell: feedbackByCell,
+                      viewportOutline: geometry.viewportOnMinimap(
+                        mapSize,
+                        drag: boardPan,
                       ),
-                      child: const SizedBox.expand(),
                     ),
                   ),
                 ),
