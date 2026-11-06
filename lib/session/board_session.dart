@@ -49,6 +49,11 @@ class BoardSession {
     return _apply((board) => actions.toggleNote(board, position, characterId));
   }
 
+  // Each cell entered by a drag is an independent Undo entry.
+  bool addNote(CellPosition position, String characterId) {
+    return _apply((board) => actions.addNote(board, position, characterId));
+  }
+
   bool placeCharacter(
     CellPosition position,
     String characterId, {

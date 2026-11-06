@@ -20,28 +20,37 @@ void main() {
       MurdokuTokens.placementHoldDuration,
       const Duration(milliseconds: 650),
     );
+    expect(
+      MurdokuTokens.placementHoldStartDelay,
+      const Duration(milliseconds: 200),
+    );
     expect(MurdokuTokens.resetHoldDuration, const Duration(milliseconds: 950));
     expect(MurdokuTokens.boardSnapDuration, const Duration(milliseconds: 180));
   });
 
-  test('typography keeps the compact and wide mockup reference scales', () {
+  test('typography exposes role-based compact and roomy reading scales', () {
     final compact = MurdokuTypography.forViewport(620);
     final wide = MurdokuTypography.forViewport(896);
-    expect(compact.body.fontSize, 8);
-    expect(wide.body.fontSize, 12);
-    expect(compact.heading.fontSize, 10);
-    expect(wide.heading.fontSize, 14);
-    expect(compact.body.height, 1.25);
-    expect(wide.body.height, 14 / 12);
+    expect(compact.body.fontSize, 14);
+    expect(wide.body.fontSize, 16);
+    expect(compact.body.height! * compact.body.fontSize!, 20);
+    expect(wide.body.height! * wide.body.fontSize!, 24);
+    expect(compact.heading.fontSize, 16);
+    expect(wide.heading.fontSize, 18);
+    expect(compact.suspectName.fontSize, 13);
+    expect(wide.suspectName.fontSize, 14);
+    expect(compact.toolLabel.fontSize, 14);
+    expect(wide.toolLabel.fontSize, 14);
+    expect(compact.toolSubtitle.fontSize, 12);
+    expect(wide.toolSubtitle.fontSize, 12);
     expect(compact.body.fontFamily, MurdokuTypography.uiFontFamily);
     expect(
       wide.suspectName.fontFamily,
       MurdokuTypography.handwritingFontFamily,
     );
     expect(wide.toolLabel.fontWeight, FontWeight.w700);
-    expect(wide.toolSubtitle.fontSize, 10);
-    expect(MurdokuTypography.forViewport(200).body.fontSize, 8);
-    expect(MurdokuTypography.forViewport(1800).body.fontSize, 12);
+    expect(MurdokuTypography.forViewport(200).body.fontSize, 14);
+    expect(MurdokuTypography.forViewport(1800).body.fontSize, 16);
   });
 
   test('theme and board colors come from the shared design palette', () {

@@ -79,7 +79,7 @@ class GameSession {
   Map<CellPosition, evaluation.PlacementVerdict> get feedbackByCell =>
       _feedbackByCell;
 
-  // Accepted edits retain feedback only for unchanged character placements
+  // Feedback survives only when every mark in the submitted cell is unchanged
   bool _applyEdit(bool Function() action) {
     if (_isSolved) return false;
 
@@ -100,11 +100,12 @@ class GameSession {
     for (final entry in _feedbackByCell.entries) {
       final position = entry.key;
 
-      final previousCharacter = before.cellAt(position).characterId;
-      final currentCharacter = after.cellAt(position).characterId;
-
-      // Changes to notes or crosses do not invalidate placement feedback
-      if (previousCharacter == currentCharacter) {
+      final previous = before.cellAt(position);
+      final current = after.cellAt(position);
+      if (previous.characterId == current.characterId &&
+          previous.crossed == current.crossed &&
+          previous.notes.length == current.notes.length &&
+          previous.notes.containsAll(current.notes)) {
         retained[position] = entry.value;
       }
     }
@@ -121,6 +122,18 @@ class GameSession {
       return false;
     }
     return _applyEdit(() => _boardSession.toggleNote(position, characterId));
+  }
+
+  // Commit one visited cell immediately; never toggle existing notes off.
+  bool addNote(CellPosition position, String characterId) {
+    final canOccupy = _canOccupy;
+    if (_isSolved ||
+        (canOccupy != null &&
+            (!canOccupy(position) ||
+                !_solution.characterPositions.containsKey(characterId)))) {
+      return false;
+    }
+    return _applyEdit(() => _boardSession.addNote(position, characterId));
   }
 
   bool toggleCross(CellPosition position) {

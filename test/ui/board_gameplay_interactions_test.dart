@@ -82,6 +82,8 @@ Future<void> _holdCell(WidgetTester tester, int row, int column) async {
   await tester.pump();
   final gesture = await tester.startGesture(_cell(tester, row, column));
   await tester.pump();
+  await tester.pump(const Duration(milliseconds: 220));
+  await tester.pump();
   await tester.pump(const Duration(milliseconds: 700));
   await gesture.up();
   await tester.pump();
@@ -215,13 +217,12 @@ void main() {
     expect(store.read('interaction-case-6'), isNull);
   });
 
-  testWidgets('primary finger movement alone does not mark the board', (
-    tester,
-  ) async {
+  testWidgets('dragging in Cross mode does not mark the board', (tester) async {
     _landscape(tester);
     final store = GameProgressStore();
     await _show(tester, store);
-    await tester.tap(find.byKey(const ValueKey('select-character-A')));
+    await tester.tap(find.byKey(const ValueKey('tool-cross')));
+    await tester.pump();
     final a = await tester.startGesture(_cell(tester, 1, 1));
     await a.moveBy(const Offset(35, 0));
     await a.up();

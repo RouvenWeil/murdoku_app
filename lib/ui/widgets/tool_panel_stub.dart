@@ -72,6 +72,12 @@ class ToolPanelStub extends StatelessWidget {
     final typography = MurdokuTypography.forViewport(
       MediaQuery.sizeOf(context).width,
     );
+    // Compact panels retain discoverable icon controls at large font scales.
+    // The hint remains in each tool's Tooltip and semantics.
+    final useCompactIcons =
+        MediaQuery.textScalerOf(context)
+            .scale(MurdokuTypography.toolLabelSize) >
+        MurdokuTypography.toolLabelSize * 1.3;
     if (showMinimap) {
       final geometry = BoardViewportGeometry(
         rows: caseData.rows,
@@ -126,39 +132,73 @@ class ToolPanelStub extends StatelessWidget {
               ),
             ),
             const SizedBox(height: MurdokuTokens.space8),
-            if (arrangement == ToolPanelArrangement.horizontal) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _tool('Cross', typography, iconOnly: true),
-                  _tool('Erase', typography, iconOnly: true),
-                  _tool('Undo', typography, iconOnly: true),
-                ],
+            Expanded(
+              child: SingleChildScrollView(
+                key: const ValueKey('compact-tool-controls'),
+                child: Column(
+                  children: [
+                    if (arrangement == ToolPanelArrangement.horizontal) ...[
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        spacing: MurdokuTokens.space4,
+                        runSpacing: MurdokuTokens.space4,
+                        children: [
+                          _tool('Cross', typography, iconOnly: true),
+                          _tool('Erase', typography, iconOnly: true),
+                          _tool('Undo', typography, iconOnly: true),
+                        ],
+                      ),
+                      const SizedBox(height: MurdokuTokens.space8),
+                    ] else if (arrangement == ToolPanelArrangement.stacked) ...[
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        spacing: MurdokuTokens.space4,
+                        runSpacing: MurdokuTokens.space4,
+                        children: [
+                          _tool('Cross', typography, iconOnly: true),
+                          _tool('Erase', typography, iconOnly: true),
+                        ],
+                      ),
+                      const SizedBox(height: MurdokuTokens.space8),
+                      _tool(
+                        'Undo',
+                        typography,
+                        iconOnly: useCompactIcons,
+                        textOnly: !useCompactIcons,
+                      ),
+                      const SizedBox(height: MurdokuTokens.space8),
+                    ] else if (arrangement ==
+                        ToolPanelArrangement.singleColumn) ...[
+                      _tool(
+                        'Cross',
+                        typography,
+                        iconOnly: useCompactIcons,
+                        textOnly: !useCompactIcons,
+                      ),
+                      const SizedBox(height: MurdokuTokens.space8),
+                      _tool(
+                        'Erase',
+                        typography,
+                        iconOnly: useCompactIcons,
+                        textOnly: !useCompactIcons,
+                      ),
+                      const SizedBox(height: MurdokuTokens.space8),
+                      _tool(
+                        'Undo',
+                        typography,
+                        iconOnly: useCompactIcons,
+                        textOnly: !useCompactIcons,
+                      ),
+                      const SizedBox(height: MurdokuTokens.space8),
+                    ],
+                    MurdokuSubmitButton(
+                      onPressed: isSolved ? onReplay : onSubmit,
+                      typography: typography,
+                      isSolved: isSolved,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: MurdokuTokens.space8),
-            ] else if (arrangement == ToolPanelArrangement.stacked) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _tool('Cross', typography, iconOnly: true),
-                  _tool('Erase', typography, iconOnly: true),
-                ],
-              ),
-              const SizedBox(height: MurdokuTokens.space8),
-              _tool('Undo', typography, textOnly: true),
-              const SizedBox(height: MurdokuTokens.space8),
-            ] else if (arrangement == ToolPanelArrangement.singleColumn) ...[
-              _tool('Cross', typography, textOnly: true),
-              const SizedBox(height: MurdokuTokens.space8),
-              _tool('Erase', typography, textOnly: true),
-              const SizedBox(height: MurdokuTokens.space8),
-              _tool('Undo', typography, textOnly: true),
-              const SizedBox(height: MurdokuTokens.space8),
-            ],
-            MurdokuSubmitButton(
-              onPressed: isSolved ? onReplay : onSubmit,
-              typography: typography,
-              isSolved: isSolved,
             ),
           ],
         ),
@@ -200,7 +240,7 @@ class ToolPanelStub extends StatelessWidget {
       'Undo' => 'UNDO',
       _ => kind,
     };
-    final subtitle = kind == 'Erase' ? 'hold to reset Progress' : null;
+    // The reset gesture remains available, without an extra caption.
     final svg = switch (kind) {
       'Cross' => MurdokuAssets.crossTool,
       'Erase' => MurdokuAssets.eraseTool,
@@ -231,7 +271,7 @@ class ToolPanelStub extends StatelessWidget {
         MurdokuToolButton(
           key: ValueKey('tool-${kind.toLowerCase()}'),
           label: label,
-          subtitle: subtitle,
+          showSubtitle: arrangement == ToolPanelArrangement.expanded,
           onPressed: shortPress,
           typography: typography,
           iconAsset: textOnly ? null : svg,

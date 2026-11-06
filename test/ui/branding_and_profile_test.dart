@@ -50,7 +50,45 @@ void main() {
     );
 
     expect(find.byType(SvgPicture), findsOneWidget);
+    expect(find.text('by Manuel\nGarand'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('murdoku-credit-stacked')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('credit stays single-line when the logo has enough space', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: SizedBox(width: 340, height: 64, child: MurdokuBrand()),
+        ),
+      ),
+    );
     expect(find.text('by Manuel Garand'), findsOneWidget);
+    expect(find.byKey(const ValueKey('murdoku-credit-inline')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('enlarged text retains a legible two-line credit', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: const Scaffold(
+            body: SizedBox(width: 185, height: 72, child: MurdokuBrand()),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('by Manuel\nGarand'), findsOneWidget);
+    final text = tester.widget<Text>(find.text('by Manuel\nGarand'));
+    expect(text.style!.fontSize, greaterThanOrEqualTo(13));
     expect(tester.takeException(), isNull);
   });
 }

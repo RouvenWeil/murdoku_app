@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,8 +6,10 @@ import 'package:flutter/material.dart';
 import '../../domain/board_state.dart';
 import '../../domain/case_definition.dart';
 import '../../session/game_session.dart';
+import '../../session/foreground_case_clock.dart';
 import '../board/board_viewport_geometry.dart';
 import '../design/murdoku_tokens.dart';
+import '../design/murdoku_typography.dart';
 import '../session/clue_pin_store.dart';
 import '../session/game_progress_store.dart';
 import '../widgets/board_viewport_stub.dart';
@@ -66,6 +69,7 @@ class CaseScreenLayout {
     required Size availableSize,
     required int rows,
     required int columns,
+    double textScale = 1,
   }) {
     if (rows <= 0 || columns <= 0) {
       throw ArgumentError('Board dimensions must be positive');
@@ -128,25 +132,38 @@ class CaseScreenLayout {
         ToolPanelArrangement.singleColumn => minimumCellSize,
         ToolPanelArrangement.expanded => throw StateError('Not a compact mode'),
       };
+      // At enlarged system font scales protect the Submit label's width.
+      // This can reduce visible board columns instead of shrinking the text.
+      final actionContentWidth = textScale > 1.3
+          ? math.max(
+              controlWidth,
+              MurdokuTokens.enlargedTextCompactToolContentWidth,
+            )
+          : controlWidth;
       final minimumToolWidth =
-          math.max(controlWidth, minimumMapWidth) + 2 * panelPadding;
+          math.max(actionContentWidth, minimumMapWidth) + 2 * panelPadding;
       final chromeHeight =
           controlRows * (minimumCellSize + controlGap) + 2 * panelPadding;
-      if (height + comparisonEpsilon < minimumMapHeight + chromeHeight)
+      if (height + comparisonEpsilon < minimumMapHeight + chromeHeight) {
         continue;
+      }
 
       final squareSide = math.min(
         width - minimumClueWidth - minimumToolWidth - separators - boardPadding,
         boardHeightLimit,
       );
-      if (squareSide + comparisonEpsilon < minimumCellSize) continue;
+      if (squareSide + comparisonEpsilon < minimumCellSize) {
+        continue;
+      }
 
       // Settled partial views show a square integer count of complete cells
       final count = math.min(
         math.min(rows, columns),
         (squareSide / minimumCellSize).floor(),
       );
-      if (count < 1) continue;
+      if (count < 1) {
+        continue;
+      }
 
       final candidate = _PartialCandidate(
         arrangement: arrangement,
@@ -172,7 +189,9 @@ class CaseScreenLayout {
         best = candidate;
       }
     }
-    if (best == null) return null;
+    if (best == null) {
+      return null;
+    }
 
     final cellSize = best.squareSide / best.count;
     return _allocate(
@@ -310,11 +329,15 @@ class CaseScreen extends StatefulWidget {
   State<CaseScreen> createState() => _CaseScreenState();
 }
 
-class _CaseScreenState extends State<CaseScreen> {
+class _CaseScreenState extends State<CaseScreen> with WidgetsBindingObserver {
   String? selectedCharacterId;
   BoardTool _activeTool = BoardTool.note;
   Offset _boardPan = Offset.zero;
   late GameSession _game;
+  late ForegroundCaseClock _clock;
+  Timer? _clockTimer;
+  bool _hydrating = false;
+  Duration _lastCheckpoint = Duration.zero;
 
   GameProgressStore get _progressStore =>
       widget.progressStore ?? GameProgressStore.instance;
@@ -322,10 +345,47 @@ class _CaseScreenState extends State<CaseScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSession();
+    WidgetsBinding.instance.addObserver(this);
+    _progressStore.addListener(_onStoreChanged);
+    _openSession();
   }
 
-  void _loadSession() {
+  void _onStoreChanged() {
+    if (mounted && !_hydrating) setState(() {});
+  }
+
+  bool get _isForeground {
+    final state = WidgetsBinding.instance.lifecycleState;
+    return state == null || state == AppLifecycleState.resumed;
+  }
+
+  void _openSession() {
+    final state = _progressStore.status(widget.caseData.id);
+    if (_progressStore.hasPersistence &&
+        state != ProgressLoadStatus.ready &&
+        state != ProgressLoadStatus.recovered) {
+      _hydrating = true;
+      _game = GameSession.fromCase(widget.caseData);
+      _clock = ForegroundCaseClock();
+      unawaited(_hydrate());
+    } else {
+      _installSession();
+    }
+  }
+
+  Future<void> _hydrate() async {
+    await _progressStore.ensureLoaded(widget.caseData);
+    if (!mounted) return;
+    if (_progressStore.status(widget.caseData.id) ==
+        ProgressLoadStatus.failed) {
+      setState(() => _hydrating = false);
+      return;
+    }
+    setState(_installSession);
+  }
+
+  void _installSession() {
+    _clockTimer?.cancel();
     final saved = _progressStore.read(widget.caseData.id);
     _game = GameSession.fromCase(
       widget.caseData,
@@ -333,6 +393,73 @@ class _CaseScreenState extends State<CaseScreen> {
       restoredFeedback: saved?.feedbackByCell ?? const {},
       previouslySolved: saved?.isSolved ?? false,
     );
+    _clock = ForegroundCaseClock(
+      accumulated: saved?.elapsed ?? Duration.zero,
+      solved: saved?.isSolved ?? false,
+    );
+    _lastCheckpoint = _clock.elapsed;
+    _hydrating = false;
+    if (_isForeground) _resumeClock();
+  }
+
+  void _resumeClock() {
+    if (_hydrating || _game.isSolved) return;
+    _clock.resume();
+    if (_progressStore.hasPersistence) {
+      _clockTimer?.cancel();
+      _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        if (_clock.elapsed - _lastCheckpoint >= const Duration(seconds: 10)) {
+          _checkpointClock();
+        }
+        setState(() {});
+      });
+    }
+  }
+
+  void _checkpointClock({
+    CaseDefinition? caseData,
+    GameProgressStore? progressStore,
+  }) {
+    final activeCase = caseData ?? widget.caseData;
+    final store = progressStore ?? _progressStore;
+    // In-memory sessions should not create new progress records merely because
+    // the screen closes. A clock-only checkpoint is durable-storage work;
+    // saves caused by actual board edits still use the in-memory store.
+    if (!store.hasPersistence) return;
+    final elapsed = _clock.elapsed;
+    if (elapsed == Duration.zero) return;
+    final previous = store.read(activeCase.id);
+    if (previous?.elapsed == elapsed) return;
+    _lastCheckpoint = elapsed;
+    store.save(
+      activeCase.id,
+      _game,
+      caseData: activeCase,
+      elapsed: elapsed,
+      attemptStarted: true,
+    );
+  }
+
+  void _pauseClock({
+    CaseDefinition? caseData,
+    GameProgressStore? progressStore,
+  }) {
+    _clockTimer?.cancel();
+    _clockTimer = null;
+    _clock.pause();
+    if (!_hydrating) {
+      _checkpointClock(caseData: caseData, progressStore: progressStore);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _resumeClock();
+    } else {
+      _pauseClock();
+    }
   }
 
   @override
@@ -340,11 +467,27 @@ class _CaseScreenState extends State<CaseScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.caseData.id != widget.caseData.id ||
         oldWidget.progressStore != widget.progressStore) {
-      _loadSession();
+      (oldWidget.progressStore ?? GameProgressStore.instance).removeListener(
+        _onStoreChanged,
+      );
+      _pauseClock(
+        caseData: oldWidget.caseData,
+        progressStore: oldWidget.progressStore ?? GameProgressStore.instance,
+      );
+      _progressStore.addListener(_onStoreChanged);
+      _openSession();
       selectedCharacterId = null;
       _activeTool = BoardTool.note;
       _boardPan = Offset.zero;
     }
+  }
+
+  @override
+  void dispose() {
+    _progressStore.removeListener(_onStoreChanged);
+    _pauseClock();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Set<String> get _placedCharacterIds {
@@ -364,7 +507,12 @@ class _CaseScreenState extends State<CaseScreen> {
     if (!action()) {
       return;
     }
-    _progressStore.save(widget.caseData.id, _game);
+    _progressStore.save(
+      widget.caseData.id,
+      _game,
+      caseData: widget.caseData,
+      elapsed: _clock.elapsed,
+    );
     setState(() {});
   }
 
@@ -375,7 +523,9 @@ class _CaseScreenState extends State<CaseScreen> {
         final position = (row: row, column: column);
         if (!widget.caseData.canOccupy(position)) continue;
         final cell = _game.board.cellAt(position);
-        if (!cell.crossed && cell.characterId == null) return true;
+        if (!cell.crossed && cell.characterId == null) {
+          return true;
+        }
       }
     }
     return false;
@@ -413,6 +563,19 @@ class _CaseScreenState extends State<CaseScreen> {
     }
   }
 
+  void _paintNote(CellPosition position) {
+    final characterId = selectedCharacterId;
+    if (_game.isSolved ||
+        _activeTool != BoardTool.note ||
+        characterId == null ||
+        _placedCharacterIds.contains(characterId)) {
+      return;
+    }
+    // Every eligible cell is written and saved as soon as the finger visits it.
+    // The game session records a separate Undo snapshot per successful mark.
+    _apply(() => _game.addNote(position, characterId));
+  }
+
   void _placeCell(CellPosition position) {
     if (_activeTool != BoardTool.note || selectedCharacterId == null) {
       return;
@@ -433,12 +596,25 @@ class _CaseScreenState extends State<CaseScreen> {
   void _undo() => _apply(_game.undo);
 
   void _resetBoard() {
-    if (_game.isSolved) {
+    final wasSolved = _game.isSolved;
+    if (wasSolved) {
       _game = GameSession.fromCase(widget.caseData);
+      _clock.reset();
     } else {
       _game.clearAll();
     }
-    _progressStore.clear(widget.caseData.id);
+    if (_progressStore.hasPersistence) {
+      _progressStore.replaceAttempt(
+        widget.caseData,
+        _game,
+        elapsed: wasSolved ? Duration.zero : _clock.elapsed,
+        attemptStarted: !wasSolved,
+      );
+    } else {
+      // Preserve the existing in-memory tests' empty/reset semantics.
+      _progressStore.clear(widget.caseData.id);
+    }
+    if (wasSolved && _isForeground) _resumeClock();
     setState(() {
       selectedCharacterId = null;
       _activeTool = BoardTool.note;
@@ -446,11 +622,19 @@ class _CaseScreenState extends State<CaseScreen> {
   }
 
   void _submit() {
-    if (!_game.canSubmit) {
-      return;
-    }
+    if (!_game.canSubmit) return;
     final result = _game.submit();
-    _progressStore.save(widget.caseData.id, _game);
+    if (result.solved) {
+      _clock.solve();
+      _clockTimer?.cancel();
+      _clockTimer = null;
+    }
+    _progressStore.save(
+      widget.caseData.id,
+      _game,
+      caseData: widget.caseData,
+      elapsed: _clock.elapsed,
+    );
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -467,9 +651,100 @@ class _CaseScreenState extends State<CaseScreen> {
   BoardViewportStore get _viewportStore =>
       widget.viewportStore ?? BoardViewportStore.instance;
 
+  Future<void> _hydrateRetry() async {
+    await _progressStore.retryLoad(widget.caseData);
+    if (!mounted) return;
+    if (_progressStore.status(widget.caseData.id) ==
+        ProgressLoadStatus.failed) {
+      setState(() => _hydrating = false);
+    } else {
+      setState(_installSession);
+    }
+  }
+
+  Future<void> _archiveAndStartFresh() async {
+    final approved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Start a new attempt?'),
+        content: const Text(
+          'The damaged save will be archived. This will not '
+          'restore its marks to the new attempt.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Archive and start'),
+          ),
+        ],
+      ),
+    );
+    if (approved != true || !mounted) return;
+    try {
+      await _progressStore.startFreshAfterFailure(widget.caseData);
+      if (mounted) setState(_installSession);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not archive the damaged save.')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_hydrating) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (_progressStore.status(widget.caseData.id) ==
+        ProgressLoadStatus.failed) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'This case has damaged or incompatible saved progress.',
+              ),
+              const Text('Your original save has not been deleted.'),
+              TextButton(
+                onPressed: () => setState(() {
+                  _hydrating = true;
+                  unawaited(_hydrateRetry());
+                }),
+                child: const Text('Retry loading'),
+              ),
+              TextButton(
+                onPressed: _archiveAndStartFresh,
+                child: const Text('Archive damaged save and start fresh'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                child: const Text('Back to cases'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    final saveError = _progressStore.saveError(widget.caseData.id);
     return Scaffold(
+      // A persistent, actionable warning is preferable to a disappearing toast.
+      persistentFooterButtons: saveError == null
+          ? null
+          : [
+              const Text('Progress not saved'),
+              TextButton(
+                onPressed: () =>
+                    unawaited(_progressStore.retrySave(widget.caseData.id)),
+                child: const Text('Retry save'),
+              ),
+            ],
       body: SafeArea(
         child: OrientationBuilder(
           builder: (context, orientation) {
@@ -509,6 +784,10 @@ class _CaseScreenState extends State<CaseScreen> {
                   availableSize: constraints.biggest,
                   rows: widget.caseData.rows,
                   columns: widget.caseData.columns,
+                  textScale:
+                      MediaQuery.textScalerOf(context)
+                          .scale(MurdokuTypography.toolLabelSize) /
+                      MurdokuTypography.toolLabelSize,
                 );
 
                 if (layout == null) {
@@ -559,6 +838,7 @@ class _CaseScreenState extends State<CaseScreen> {
                           _activeTool = BoardTool.note;
                         }),
                         onBack: () => Navigator.of(context).maybePop(),
+                        elapsed: _clock.elapsed,
                       ),
                     ),
                     const VerticalDivider(width: 1),
@@ -573,6 +853,16 @@ class _CaseScreenState extends State<CaseScreen> {
                         boardState: _game.board,
                         feedbackByCell: _game.feedbackByCell,
                         onCellTap: _tapCell,
+                        onNotePaint: _paintNote,
+                        noteCharacterId:
+                            !_game.isSolved &&
+                                _activeTool == BoardTool.note &&
+                                selectedCharacterId != null &&
+                                !_placedCharacterIds.contains(
+                                  selectedCharacterId,
+                                )
+                            ? selectedCharacterId
+                            : null,
                         onPlacementHold: _placeCell,
                         enablePlacementHold:
                             !_game.isSolved &&

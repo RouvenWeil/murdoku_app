@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +31,8 @@ class BoardViewportStub extends StatefulWidget {
     this.onCellTap,
     this.onPlacementHold,
     this.enablePlacementHold = false,
+    this.noteCharacterId,
+    this.onNotePaint,
   });
 
   final CaseDefinition caseData;
@@ -42,6 +47,9 @@ class BoardViewportStub extends StatefulWidget {
   final ValueChanged<CellPosition>? onCellTap;
   final ValueChanged<CellPosition>? onPlacementHold;
   final bool enablePlacementHold;
+  // Only supplied for the active Notes tool with a selected, unplaced suspect.
+  final String? noteCharacterId;
+  final ValueChanged<CellPosition>? onNotePaint;
 
   @override
   State<BoardViewportStub> createState() => _BoardViewportStubState();
@@ -64,6 +72,13 @@ class _BoardViewportStubState extends State<BoardViewportStub>
   CellPosition? _heldCell;
   bool _holdCommitted = false;
   bool _suppressTapUntilAllUp = false;
+  int? _strokePointer;
+  Offset? _strokeLastPoint;
+  bool _paintingNotes = false;
+  // A visited cell is emitted at most once per drag, even if revisited.
+  final Set<CellPosition> _strokeCells = {};
+  Timer? _holdStartTimer;
+  Offset? _holdAnchor;
 
   late final AnimationController _snapController;
   late final AnimationController _holdController;
@@ -91,10 +106,20 @@ class _BoardViewportStubState extends State<BoardViewportStub>
           ..addStatusListener((status) {
             if (status == AnimationStatus.completed &&
                 _heldCell != null &&
+                !_holdCommitted &&
                 !_suppressTapUntilAllUp &&
-                _pointers.length == 1) {
+                _pointers.length == 1 &&
+                widget.enablePlacementHold) {
+              final cell = _heldCell!;
               _holdCommitted = true;
-              widget.onPlacementHold?.call(_heldCell!);
+              _holdStartTimer?.cancel();
+              // A completed placement ends painting for this pointer gesture.
+              _paintingNotes = false;
+              _strokePointer = null;
+              _strokeLastPoint = null;
+              _tapPointer = null;
+              _tapDownPosition = null;
+              widget.onPlacementHold?.call(cell);
             }
           });
   }
@@ -116,13 +141,19 @@ class _BoardViewportStubState extends State<BoardViewportStub>
       _cancelPress();
     }
     if (!widget.enablePlacementHold && oldWidget.enablePlacementHold) {
-      _holdController.stop();
-      _heldCell = null;
+      _cancelHold();
+    }
+    // Switching tools or moving the viewport ends the active paint gesture.
+    if ((oldWidget.noteCharacterId != widget.noteCharacterId ||
+            oldWidget.origin != widget.origin) &&
+        _paintingNotes) {
+      _cancelPress();
     }
   }
 
   @override
   void dispose() {
+    _holdStartTimer?.cancel();
     _snapController.dispose();
     _holdController.dispose();
     super.dispose();
@@ -156,12 +187,91 @@ class _BoardViewportStubState extends State<BoardViewportStub>
     );
   }
 
-  void _cancelPress() {
-    _tapPointer = null;
-    _tapDownPosition = null;
+  void _cancelHold() {
+    _holdStartTimer?.cancel();
+    _holdStartTimer = null;
+    _holdAnchor = null;
     _heldCell = null;
     _holdController.stop();
     _holdController.reset();
+  }
+
+  void _cancelPress() {
+    _tapPointer = null;
+    _tapDownPosition = null;
+    _paintingNotes = false;
+    _strokePointer = null;
+    _strokeLastPoint = null;
+    _strokeCells.clear();
+    _cancelHold();
+  }
+
+  bool _mayPaint(CellPosition position) {
+    final characterId = widget.noteCharacterId;
+    if (characterId == null || !widget.caseData.canOccupy(position)) {
+      return false;
+    }
+    final cell = widget.boardState?.cellAt(position);
+    return cell != null && !cell.crossed && cell.characterId == null;
+  }
+
+  // A single OS move event can cross several cells. Visit the whole segment
+  // in order and write each eligible note through the authoritative session.
+  void _paintSegment(Offset from, Offset to) {
+    final distance = (to - from).distance;
+    final stepSize = math.max(widget.cellSize / 4, 1.0);
+    final steps = math.max(1, (distance / stepSize).ceil());
+    for (var step = 0; step <= steps; step++) {
+      final sample = Offset.lerp(from, to, step / steps)!;
+      final cell = _geometry.cellAt(sample, translation: _paintShift);
+      if (cell != null && _mayPaint(cell) && _strokeCells.add(cell)) {
+        widget.onNotePaint?.call(cell);
+      }
+    }
+  }
+
+  bool _mayPlace(CellPosition position) {
+    if (_holdCommitted ||
+        !widget.enablePlacementHold ||
+        widget.onPlacementHold == null ||
+        !widget.caseData.canOccupy(position)) {
+      return false;
+    }
+    final cell = widget.boardState?.cellAt(position);
+    return cell != null && !cell.crossed && cell.characterId == null;
+  }
+
+  // Holding on ANY visited cell, including after a drag, can place a suspect.
+  // The small idle delay avoids a distracting placement ring while swiping.
+  void _scheduleHold(Offset localPosition) {
+    _cancelHold();
+    final cell = _geometry.cellAt(localPosition, translation: _paintShift);
+    // Keep the tap target even when this tool cannot place a character.
+    _heldCell = cell;
+    _holdAnchor = localPosition;
+    if (cell == null || !_mayPlace(cell)) {
+      return;
+    }
+    _holdStartTimer = Timer(MurdokuTokens.placementHoldStartDelay, () {
+      if (!mounted ||
+          _holdCommitted ||
+          _suppressTapUntilAllUp ||
+          _pointers.length != 1 ||
+          _heldCell != cell ||
+          !_mayPlace(cell)) {
+        return;
+      }
+      _holdController.forward(from: 0);
+    });
+  }
+
+  void _updateHold(Offset localPosition) {
+    final cell = _geometry.cellAt(localPosition, translation: _paintShift);
+    if (cell != _heldCell ||
+        (_holdAnchor != null &&
+            (localPosition - _holdAnchor!).distance > kTouchSlop)) {
+      _scheduleHold(localPosition);
+    }
   }
 
   void _onDown(PointerDownEvent event) {
@@ -190,22 +300,9 @@ class _BoardViewportStubState extends State<BoardViewportStub>
       _tapPointer = event.pointer;
       _tapDownPosition = event.localPosition;
       _holdCommitted = false;
-      _heldCell = _geometry.cellAt(
-        event.localPosition,
-        translation: _paintShift,
-      );
-      if (_heldCell != null &&
-          widget.enablePlacementHold &&
-          widget.onPlacementHold != null &&
-          widget.caseData.canOccupy(_heldCell!) &&
-          widget.boardState?.cellAt(_heldCell!).crossed != true &&
-          widget.boardState?.cellAt(_heldCell!).characterId == null) {
-        _holdController.forward(from: 0);
-      } else {
-        _holdController.reset();
-      }
+      _scheduleHold(event.localPosition);
     } else {
-      // A second touch cancels any pending placement even if it later lifts
+      // Switch to two-finger navigation without undoing already painted notes.
       _suppressTapUntilAllUp = true;
       _cancelPress();
       _lastCentroid = _pointers.length == 2 ? _centroid() : null;
@@ -230,10 +327,36 @@ class _BoardViewportStubState extends State<BoardViewportStub>
       _applyDrag(delta);
       return;
     }
-    if (event.pointer == _tapPointer &&
-        _tapDownPosition != null &&
-        (event.localPosition - _tapDownPosition!).distance > kTouchSlop) {
-      _cancelPress();
+    if (_holdCommitted) {
+      return;
+    }
+    if (_paintingNotes &&
+        event.pointer == _strokePointer &&
+        _strokeLastPoint != null) {
+      _paintSegment(_strokeLastPoint!, event.localPosition);
+      _strokeLastPoint = event.localPosition;
+      _updateHold(event.localPosition);
+      return;
+    }
+    if (event.pointer == _tapPointer && _tapDownPosition != null) {
+      if ((event.localPosition - _tapDownPosition!).distance > kTouchSlop) {
+        if (widget.noteCharacterId != null &&
+            widget.onNotePaint != null &&
+            widget.boardState != null &&
+            !_suppressTapUntilAllUp) {
+          _paintingNotes = true;
+          _strokePointer = event.pointer;
+          _strokeLastPoint = event.localPosition;
+          _paintSegment(_tapDownPosition!, event.localPosition);
+          _tapPointer = null;
+          _tapDownPosition = null;
+          _scheduleHold(event.localPosition);
+        } else {
+          _cancelPress();
+        }
+      } else {
+        _updateHold(event.localPosition);
+      }
     }
   }
 
@@ -253,6 +376,11 @@ class _BoardViewportStubState extends State<BoardViewportStub>
       return;
     }
     final wasNavigating = _lastCentroid != null;
+    final isStroke = _paintingNotes && event.pointer == _strokePointer;
+    // The release point may be beyond the final delivered move event.
+    if (isStroke && event is PointerUpEvent && _strokeLastPoint != null) {
+      _paintSegment(_strokeLastPoint!, event.localPosition);
+    }
     final shouldTap =
         event is PointerUpEvent &&
         !_suppressTapUntilAllUp &&
@@ -269,7 +397,7 @@ class _BoardViewportStubState extends State<BoardViewportStub>
     if (_pointers.isEmpty) {
       _suppressTapUntilAllUp = false;
     }
-    if (tapped != null) {
+    if (!isStroke && tapped != null) {
       widget.onCellTap?.call(tapped);
     }
   }
@@ -297,7 +425,9 @@ class _BoardViewportStubState extends State<BoardViewportStub>
 
   List<Widget> _crossOverlays(BoardViewportGeometry geometry) {
     final board = widget.boardState;
-    if (board == null) return const [];
+    if (board == null) {
+      return const [];
+    }
     final shift = _paintShift;
     final result = <Widget>[];
     // Only build crosses that can intersect the visible board region

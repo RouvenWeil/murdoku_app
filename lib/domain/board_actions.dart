@@ -46,6 +46,28 @@ BoardState toggleNote(
   return board.withCell(position, newCell);
 }
 
+// Drag painting is additive, unlike the short-tap toggle.
+// A cell already containing this note produces no new Undo entry.
+BoardState addNote(
+  BoardState board,
+  CellPosition position,
+  String characterId,
+) {
+  if (characterId.isEmpty) {
+    throw ArgumentError.value(characterId, 'characterId');
+  }
+  final cell = board.cellAt(position);
+  if (cell.crossed ||
+      cell.characterId != null ||
+      cell.notes.contains(characterId)) {
+    return board;
+  }
+  return board.withCell(
+    position,
+    CellState(notes: {...cell.notes, characterId}),
+  );
+}
+
 // Generated crosses retain existing characters and crosses
 BoardState _ensureCross(BoardState board, CellPosition position) {
   final cell = board.cellAt(position);

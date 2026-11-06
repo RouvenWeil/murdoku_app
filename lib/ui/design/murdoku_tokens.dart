@@ -29,6 +29,8 @@ abstract final class MurdokuTokens {
   static const double placedClueOpacity = 0.65;
   static const double disabledToolOpacity = 0.4;
   static const double caseCardHeight = 144;
+  // Protects full-size Submit labels at large Android font settings.
+  static const double enlargedTextCompactToolContentWidth = 128;
 
   // Board marks and non-scaled painter strokes
   // A deliberate 4dp choice; scaled wall/grid widths remain proportional
@@ -38,6 +40,8 @@ abstract final class MurdokuTokens {
 
   // Interaction timings are provisional and may need device validation
   static const Duration boardSnapDuration = Duration(milliseconds: 180);
+  // Wait briefly after the finger settles on a cell, then animate the ring.
+  static const Duration placementHoldStartDelay = Duration(milliseconds: 200);
   static const Duration placementHoldDuration = Duration(milliseconds: 650);
   static const Duration resetHoldDuration = Duration(milliseconds: 950);
 

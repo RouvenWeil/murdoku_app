@@ -19,6 +19,7 @@ class CluePanelStub extends StatelessWidget {
     required this.onPinClue,
     required this.onBack,
     this.placedCharacterIds = const {},
+    this.elapsed = Duration.zero,
   });
 
   final CaseDefinition caseData;
@@ -28,6 +29,18 @@ class CluePanelStub extends StatelessWidget {
   final ValueChanged<String> onPinClue;
   final VoidCallback onBack;
   final Set<String> placedCharacterIds;
+  final Duration elapsed;
+
+  static String formatElapsed(Duration duration) {
+    final total = duration.inSeconds;
+    final hours = total ~/ 3600;
+    final minutes = (total ~/ 60) % 60;
+    final seconds = total % 60;
+    final clock =
+        '${minutes.toString().padLeft(2, '0')}:'
+        '${seconds.toString().padLeft(2, '0')}';
+    return hours == 0 ? clock : '$hours:$clock';
+  }
 
   static String generalId(int index) => 'general:$index';
   static String characterId(String id) => 'character:$id';
@@ -141,18 +154,48 @@ class CluePanelStub extends StatelessWidget {
             MurdokuTokens.space8,
             MurdokuTokens.space12,
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  caseData.title,
-                  maxLines: 2,
-                  style: typography.heading,
-                ),
-              ),
-              const SizedBox(width: MurdokuTokens.space8),
-              Text('Timer —', style: typography.body),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // When Android enlarges text, the elapsed-time label and the
+              // case title need their own lines. The compact arrangement
+              // prevents horizontal overflow without shrinking the text,
+              // regardless of how wide the board layout makes this panel.
+              final scaledBodySize = MediaQuery.textScalerOf(context)
+                  .scale(typography.body.fontSize!);
+              final useStackedHeader =
+                  scaledBodySize > typography.body.fontSize! * 1.3;
+              final title = Text(
+                caseData.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: typography.heading,
+              );
+              final timer = Text(
+                'Timer ${formatElapsed(elapsed)}',
+                style: typography.body,
+              );
+
+              if (useStackedHeader) {
+                return Column(
+                  key: const ValueKey('case-heading-stacked'),
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    title,
+                    const SizedBox(height: MurdokuTokens.space4),
+                    timer,
+                  ],
+                );
+              }
+              return Row(
+                key: const ValueKey('case-heading-inline'),
+                children: [
+                  Expanded(child: title),
+                  const SizedBox(width: MurdokuTokens.space8),
+                  timer,
+                ],
+              );
+            },
           ),
         ),
         Expanded(

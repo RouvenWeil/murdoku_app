@@ -69,6 +69,8 @@ Future<void> _hold(WidgetTester tester, int row, int column) async {
   await tester.pump();
   final touch = await tester.startGesture(_cell(tester, row, column));
   await tester.pump();
+  await tester.pump(const Duration(milliseconds: 220));
+  await tester.pump();
   await tester.pump(const Duration(milliseconds: 700));
   await touch.up();
   await tester.pump();
@@ -122,7 +124,7 @@ void main() {
     expect(button('cross').label, 'Place\nCross');
     expect(button('note').label, 'Notes');
     expect(button('erase').label, 'Erase Cell');
-    expect(button('erase').subtitle, 'hold to reset Progress');
+    expect(button('erase').subtitle, isNull);
     expect(button('note').onPressed, isNull);
     expect(button('erase').onPressed, isNull);
     expect(find.text('SUBMIT'), findsOneWidget);

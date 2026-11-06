@@ -63,13 +63,13 @@ void main() {
     expect(store.toggle('one', 'character:A'), isNull);
   });
 
-  test('typography honors mockup scale bounds', () {
-    expect(MurdokuTypography.forViewport(400).baseSize, 8);
-    expect(MurdokuTypography.forViewport(896).baseSize, 12);
-    expect(MurdokuTypography.forViewport(1200).baseSize, 12);
+  test('responsive reading sizes remain legible at compact widths', () {
+    expect(MurdokuTypography.forViewport(400).baseSize, 14);
+    expect(MurdokuTypography.forViewport(896).baseSize, 16);
+    expect(MurdokuTypography.forViewport(1200).baseSize, 16);
     expect(
       MurdokuTypography.forViewport(896).body.height,
-      closeTo(14 / 12, 0.0001),
+      closeTo(24 / 16, 0.0001),
     );
   });
 
