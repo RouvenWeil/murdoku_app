@@ -61,8 +61,9 @@ BoardState _ensureCross(BoardState board, CellPosition position) {
 BoardState placeCharacter(
   BoardState board,
   CellPosition position,
-  String characterId,
-) {
+  String characterId, {
+  bool Function(CellPosition)? canMark,
+}) {
   final target = board.cellAt(position);
 
   if (characterId.isEmpty) {
@@ -89,13 +90,19 @@ BoardState placeCharacter(
   for (var column = 0; column < board.columns; column++) {
     if (column == position.column) continue;
 
-    updated = _ensureCross(updated, (row: position.row, column: column));
+    final crossPosition = (row: position.row, column: column);
+    if (canMark == null || canMark(crossPosition)) {
+      updated = _ensureCross(updated, crossPosition);
+    }
   }
 
   for (var row = 0; row < board.rows; row++) {
     if (row == position.row) continue;
 
-    updated = _ensureCross(updated, (row: row, column: position.column));
+    final crossPosition = (row: row, column: position.column);
+    if (canMark == null || canMark(crossPosition)) {
+      updated = _ensureCross(updated, crossPosition);
+    }
   }
 
   return updated;

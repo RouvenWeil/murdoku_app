@@ -3,7 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../domain/case_definition.dart';
+import '../../domain/board_state.dart';
+import '../../session/game_session.dart';
+import '../session/game_progress_store.dart';
 import '../session/clue_pin_store.dart';
+import '../board/board_viewport_geometry.dart';
 import '../widgets/board_viewport_stub.dart';
 import '../widgets/clue_panel_stub.dart';
 import '../widgets/tool_panel_stub.dart';
@@ -283,10 +287,18 @@ class _PartialCandidate {
 }
 
 class CaseScreen extends StatefulWidget {
-  const CaseScreen({super.key, required this.caseData, this.pinStore});
+  const CaseScreen({
+    super.key,
+    required this.caseData,
+    this.pinStore,
+    this.viewportStore,
+    this.progressStore,
+  });
 
   final CaseDefinition caseData;
   final CluePinStore? pinStore;
+  final BoardViewportStore? viewportStore;
+  final GameProgressStore? progressStore;
 
   @override
   State<CaseScreen> createState() => _CaseScreenState();
@@ -294,8 +306,160 @@ class CaseScreen extends StatefulWidget {
 
 class _CaseScreenState extends State<CaseScreen> {
   String? selectedCharacterId;
+  BoardTool _activeTool = BoardTool.note;
+  Offset _boardPan = Offset.zero;
+  late GameSession _game;
+
+  GameProgressStore get _progressStore =>
+      widget.progressStore ?? GameProgressStore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSession();
+  }
+
+  void _loadSession() {
+    final saved = _progressStore.read(widget.caseData.id);
+    _game = GameSession.fromCase(
+      widget.caseData,
+      restoredBoard: saved?.board,
+      restoredFeedback: saved?.feedbackByCell ?? const {},
+      previouslySolved: saved?.isSolved ?? false,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant CaseScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.caseData.id != widget.caseData.id ||
+        oldWidget.progressStore != widget.progressStore) {
+      _loadSession();
+      selectedCharacterId = null;
+      _activeTool = BoardTool.note;
+      _boardPan = Offset.zero;
+    }
+  }
+
+  Set<String> get _placedCharacterIds {
+    final result = <String>{};
+    for (var row = 0; row < _game.board.rows; row++) {
+      for (var column = 0; column < _game.board.columns; column++) {
+        final id = _game.board.cellAt((row: row, column: column)).characterId;
+        if (id != null) {
+          result.add(id);
+        }
+      }
+    }
+    return result;
+  }
+
+  void _apply(bool Function() action) {
+    if (!action()) {
+      return;
+    }
+    _progressStore.save(widget.caseData.id, _game);
+    setState(() {});
+  }
+
+  // Tool eligibility depends on markable cells, not just board dimensions
+  bool get _hasFreeCell {
+    for (var row = 0; row < _game.board.rows; row++) {
+      for (var column = 0; column < _game.board.columns; column++) {
+        final position = (row: row, column: column);
+        if (!widget.caseData.canOccupy(position)) continue;
+        final cell = _game.board.cellAt(position);
+        if (!cell.crossed && cell.characterId == null) return true;
+      }
+    }
+    return false;
+  }
+
+  bool get _hasErasableCell {
+    for (var row = 0; row < _game.board.rows; row++) {
+      for (var column = 0; column < _game.board.columns; column++) {
+        if (!_game.board.cellAt((row: row, column: column)).isEmpty) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  void _tapCell(CellPosition position) {
+    if (_game.isSolved || !widget.caseData.canOccupy(position)) {
+      return;
+    }
+    switch (_activeTool) {
+      case BoardTool.note:
+        if (selectedCharacterId != null &&
+            !_placedCharacterIds.contains(selectedCharacterId) &&
+            widget.caseData.canOccupy(position)) {
+          _apply(() => _game.toggleNote(position, selectedCharacterId!));
+        }
+        return;
+      case BoardTool.cross:
+        _apply(() => _game.toggleCross(position));
+        return;
+      case BoardTool.erase:
+        _apply(() => _game.eraseCell(position));
+        return;
+    }
+  }
+
+  void _placeCell(CellPosition position) {
+    if (_activeTool != BoardTool.note || selectedCharacterId == null) {
+      return;
+    }
+    _apply(() => _game.placeCharacter(position, selectedCharacterId!));
+  }
+
+  void _selectTool(BoardTool tool) {
+    if (_game.isSolved) {
+      return;
+    }
+    setState(() {
+      // A second tap on Cross/Erase returns to the default Note tool
+      _activeTool = _activeTool == tool ? BoardTool.note : tool;
+    });
+  }
+
+  void _undo() => _apply(_game.undo);
+
+  void _resetBoard() {
+    if (_game.isSolved) {
+      _game = GameSession.fromCase(widget.caseData);
+    } else {
+      _game.clearAll();
+    }
+    _progressStore.clear(widget.caseData.id);
+    setState(() {
+      selectedCharacterId = null;
+      _activeTool = BoardTool.note;
+    });
+  }
+
+  void _submit() {
+    if (!_game.canSubmit) {
+      return;
+    }
+    final result = _game.submit();
+    _progressStore.save(widget.caseData.id, _game);
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result.solved
+              ? 'Case solved!'
+              : 'Some placements are incorrect. Review the marked cells.',
+        ),
+      ),
+    );
+  }
 
   CluePinStore get _pinStore => widget.pinStore ?? CluePinStore.instance;
+  BoardViewportStore get _viewportStore =>
+      widget.viewportStore ?? BoardViewportStore.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -354,6 +518,24 @@ class _CaseScreenState extends State<CaseScreen> {
                   );
                 }
 
+                final viewportGeometry = BoardViewportGeometry(
+                  rows: widget.caseData.rows,
+                  columns: widget.caseData.columns,
+                  visibleRows: layout.visibleRows,
+                  visibleColumns: layout.visibleColumns,
+                  cellSize: layout.cellSize,
+                  origin: _viewportStore.originFor(widget.caseData.id),
+                );
+                void navigate(BoardOrigin target) {
+                  setState(() {
+                    _viewportStore.setOrigin(
+                      widget.caseData.id,
+                      viewportGeometry.clampOrigin(target),
+                    );
+                    _boardPan = Offset.zero;
+                  });
+                }
+
                 return Row(
                   children: [
                     SizedBox(
@@ -361,12 +543,14 @@ class _CaseScreenState extends State<CaseScreen> {
                       child: CluePanelStub(
                         caseData: widget.caseData,
                         selectedCharacterId: selectedCharacterId,
+                        placedCharacterIds: _placedCharacterIds,
                         pinnedClueId: _pinStore.pinnedFor(widget.caseData.id),
                         onPinClue: (id) => setState(() {
                           _pinStore.toggle(widget.caseData.id, id);
                         }),
                         onCharacterSelected: (id) => setState(() {
                           selectedCharacterId = id;
+                          _activeTool = BoardTool.note;
                         }),
                         onBack: () => Navigator.of(context).maybePop(),
                       ),
@@ -378,6 +562,20 @@ class _CaseScreenState extends State<CaseScreen> {
                         visibleRows: layout.visibleRows,
                         visibleColumns: layout.visibleColumns,
                         cellSize: layout.cellSize,
+                        origin: viewportGeometry.origin,
+                        onOriginChanged: navigate,
+                        boardState: _game.board,
+                        feedbackByCell: _game.feedbackByCell,
+                        onCellTap: _tapCell,
+                        onPlacementHold: _placeCell,
+                        enablePlacementHold:
+                            !_game.isSolved &&
+                            _activeTool == BoardTool.note &&
+                            selectedCharacterId != null &&
+                            !_placedCharacterIds.contains(selectedCharacterId),
+                        onPanChanged: (delta) => setState(() {
+                          _boardPan = delta;
+                        }),
                       ),
                     ),
                     const VerticalDivider(width: 1),
@@ -389,6 +587,32 @@ class _CaseScreenState extends State<CaseScreen> {
                         arrangement: layout.toolArrangement,
                         minimapWidth: layout.minimapWidth,
                         minimapHeight: layout.minimapHeight,
+                        origin: viewportGeometry.origin,
+                        visibleRows: layout.visibleRows,
+                        visibleColumns: layout.visibleColumns,
+                        boardCellSize: layout.cellSize,
+                        boardPan: _boardPan,
+                        boardState: _game.board,
+                        feedbackByCell: _game.feedbackByCell,
+                        activeTool: _activeTool,
+                        crossEnabled: !_game.isSolved && _hasFreeCell,
+                        noteEnabled:
+                            !_game.isSolved &&
+                            selectedCharacterId != null &&
+                            !_placedCharacterIds.contains(
+                              selectedCharacterId,
+                            ) &&
+                            _hasFreeCell,
+                        eraseEnabled: !_game.isSolved && _hasErasableCell,
+                        isSolved: _game.isSolved,
+                        onReplay: _resetBoard,
+                        onToolSelected: _game.isSolved ? null : _selectTool,
+                        onUndo: _game.canUndo ? _undo : null,
+                        onSubmit: _game.canSubmit ? _submit : null,
+                        onClearAll: _hasErasableCell && !_game.isSolved
+                            ? _resetBoard
+                            : null,
+                        onMinimapNavigate: navigate,
                       ),
                     ),
                   ],

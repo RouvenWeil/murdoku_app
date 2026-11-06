@@ -3,11 +3,14 @@ import 'package:flutter/services.dart';
 
 import '../../data/case_loader.dart';
 import '../../domain/case_definition.dart';
+import '../session/game_progress_store.dart';
 import '../widgets/murdoku_brand.dart';
 import 'case_screen.dart';
 
 class CaseSelectionScreen extends StatefulWidget {
-  const CaseSelectionScreen({super.key});
+  const CaseSelectionScreen({super.key, this.progressStore});
+
+  final GameProgressStore? progressStore;
 
   @override
   State<CaseSelectionScreen> createState() => _CaseSelectionScreenState();
@@ -22,6 +25,9 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
     'art-museum-heist',
     'golf-course',
   ];
+
+  GameProgressStore get _progressStore =>
+      widget.progressStore ?? GameProgressStore.instance;
 
   late Future<List<CaseDefinition>> _cases;
   bool _openingCase = false;
@@ -48,7 +54,10 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
       ]);
       if (!mounted) return;
       await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(builder: (_) => CaseScreen(caseData: caseData)),
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              CaseScreen(caseData: caseData, progressStore: _progressStore),
+        ),
       );
     } finally {
       // No orientation preference remains when returning to case selection
@@ -104,6 +113,8 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
                   ),
                   itemBuilder: (context, index) {
                     final caseData = cases[index];
+                    final solved =
+                        _progressStore.read(caseData.id)?.isSolved ?? false;
                     return Card(
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
@@ -125,11 +136,19 @@ class _CaseSelectionScreenState extends State<CaseSelectionScreen> {
                                 '${caseData.difficulty.replaceAll('-', ' ')}',
                               ),
                               const SizedBox(height: 4),
-                              const Row(
+                              Row(
                                 children: [
-                                  Text('Open case'),
-                                  Spacer(),
-                                  Icon(Icons.arrow_forward_rounded),
+                                  if (solved) ...[
+                                    const Icon(
+                                      Icons.check_circle_outline,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    const Text('Solved'),
+                                  ] else
+                                    const Text('Open case'),
+                                  const Spacer(),
+                                  const Icon(Icons.arrow_forward_rounded),
                                 ],
                               ),
                             ],

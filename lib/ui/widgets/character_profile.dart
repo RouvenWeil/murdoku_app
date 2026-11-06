@@ -38,22 +38,20 @@ class CharacterProfile extends StatelessWidget {
           Container(
             key: ValueKey('character-portrait-frame-$initial'),
             width: MurdokuTokens.profileFrameWidth,
-            height:
-                MurdokuTokens.portraitHeight +
-                MurdokuTokens.portraitBorderWidth,
+            height: MurdokuTokens.portraitHeight + MurdokuTokens.borderWidth,
             decoration: const BoxDecoration(
               border: Border(
                 left: BorderSide(
                   color: Colors.white,
-                  width: MurdokuTokens.portraitBorderWidth,
+                  width: MurdokuTokens.borderWidth,
                 ),
                 top: BorderSide(
                   color: Colors.white,
-                  width: MurdokuTokens.portraitBorderWidth,
+                  width: MurdokuTokens.borderWidth,
                 ),
                 right: BorderSide(
                   color: Colors.white,
-                  width: MurdokuTokens.portraitBorderWidth,
+                  width: MurdokuTokens.borderWidth,
                 ),
               ),
             ),

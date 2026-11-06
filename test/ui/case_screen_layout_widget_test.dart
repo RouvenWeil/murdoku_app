@@ -82,7 +82,7 @@ void main() {
     expect(board.cellSize, greaterThanOrEqualTo(48));
     expect(tools.showMinimap, isTrue);
     expect(find.byKey(const ValueKey('case-minimap')), findsOneWidget);
-    expect(find.text('Submit'), findsOneWidget);
+    expect(find.text('SUBMIT'), findsOneWidget);
     expect(find.text('Note'), findsNothing);
     final compactButtons = find.descendant(
       of: find.byType(ToolPanelStub),
@@ -94,7 +94,7 @@ void main() {
       expect(target.width, greaterThanOrEqualTo(48));
       expect(target.height, greaterThanOrEqualTo(48));
     }
-    final submit = tester.getSize(find.widgetWithText(FilledButton, 'Submit'));
+    final submit = tester.getSize(find.widgetWithText(FilledButton, 'SUBMIT'));
     expect(submit.height, greaterThanOrEqualTo(48));
     expect(
       tester.getSize(find.byKey(const ValueKey('visible-board-region'))),
@@ -137,7 +137,7 @@ void main() {
       expect(size.width, greaterThanOrEqualTo(48));
       expect(size.height, greaterThanOrEqualTo(48));
     }
-    expect(find.text('Undo'), findsOneWidget);
+    expect(find.text('UNDO'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -161,10 +161,10 @@ void main() {
     );
     expect(tools.arrangement, ToolPanelArrangement.singleColumn);
     expect(board.visibleRows, 4);
-    expect(find.text('Cross'), findsOneWidget);
-    expect(find.text('Erase'), findsOneWidget);
-    expect(find.text('Undo'), findsOneWidget);
-    expect(find.text('Submit'), findsOneWidget);
+    expect(find.text('Place\nCross'), findsOneWidget);
+    expect(find.text('Erase Cell'), findsOneWidget);
+    expect(find.text('UNDO'), findsOneWidget);
+    expect(find.text('SUBMIT'), findsOneWidget);
     final buttons = find.descendant(
       of: find.byType(ToolPanelStub),
       matching: find.byType(OutlinedButton),
@@ -175,7 +175,7 @@ void main() {
       expect(size.width, greaterThanOrEqualTo(48));
       expect(size.height, greaterThanOrEqualTo(48));
     }
-    final submit = tester.getSize(find.widgetWithText(FilledButton, 'Submit'));
+    final submit = tester.getSize(find.widgetWithText(FilledButton, 'SUBMIT'));
     expect(submit.height, greaterThanOrEqualTo(48));
     final minimap = tester.getSize(find.byKey(const ValueKey('case-minimap')));
     expect(minimap.shortestSide, greaterThanOrEqualTo(96));

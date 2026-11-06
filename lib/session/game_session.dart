@@ -17,23 +17,33 @@ class GameSession {
        );
 
   // Case-based sessions use the scene grid as the placement boundary
-  GameSession.fromCase(CaseDefinition caseDefinition, {int historyLimit = 20})
-    : this._(
-        initialBoard: BoardState.empty(
-          caseDefinition.rows,
-          caseDefinition.columns,
-        ),
-        solution: caseDefinition.solution,
-        historyLimit: historyLimit,
-        canOccupy: caseDefinition.canOccupy,
-      );
+  GameSession.fromCase(
+    CaseDefinition caseDefinition, {
+    int historyLimit = 20,
+    BoardState? restoredBoard,
+    Map<CellPosition, evaluation.PlacementVerdict> restoredFeedback = const {},
+    bool previouslySolved = false,
+  }) : this._(
+         initialBoard:
+             restoredBoard ??
+             BoardState.empty(caseDefinition.rows, caseDefinition.columns),
+         solution: caseDefinition.solution,
+         historyLimit: historyLimit,
+         canOccupy: caseDefinition.canOccupy,
+         initialFeedback: restoredFeedback,
+         initiallySolved: previouslySolved,
+       );
 
   GameSession._({
     required BoardState initialBoard,
     required evaluation.CaseSolution solution,
     required int historyLimit,
     required this._canOccupy,
+    Map<CellPosition, evaluation.PlacementVerdict> initialFeedback = const {},
+    bool initiallySolved = false,
   }) : _solution = solution,
+       _feedbackByCell = Map.unmodifiable(initialFeedback),
+       _isSolved = initiallySolved,
        _boardSession = BoardSession(
          initialBoard: initialBoard,
          historyLimit: historyLimit,
@@ -51,10 +61,10 @@ class GameSession {
   final bool Function(CellPosition)? _canOccupy;
 
   // Terminal completion flag locks the existing attempt
-  bool _isSolved = false;
+  bool _isSolved;
 
   // Feedback lifetime independent of BoardSession Undo history
-  Map<CellPosition, evaluation.PlacementVerdict> _feedbackByCell = const {};
+  Map<CellPosition, evaluation.PlacementVerdict> _feedbackByCell;
 
   BoardState get board => _boardSession.board;
 
@@ -104,10 +114,18 @@ class GameSession {
   }
 
   bool toggleNote(CellPosition position, String characterId) {
+    final canOccupy = _canOccupy;
+    if (canOccupy != null && !canOccupy(position)) return false;
+    if (canOccupy != null &&
+        !_solution.characterPositions.containsKey(characterId)) {
+      return false;
+    }
     return _applyEdit(() => _boardSession.toggleNote(position, characterId));
   }
 
   bool toggleCross(CellPosition position) {
+    final canOccupy = _canOccupy;
+    if (canOccupy != null && !canOccupy(position)) return false;
     return _applyEdit(() => _boardSession.toggleCross(position));
   }
 
@@ -122,11 +140,17 @@ class GameSession {
     }
 
     return _applyEdit(
-      () => _boardSession.placeCharacter(position, characterId),
+      () => _boardSession.placeCharacter(
+        position,
+        characterId,
+        canMark: canOccupy,
+      ),
     );
   }
 
   bool eraseCell(CellPosition position) {
+    final canOccupy = _canOccupy;
+    if (canOccupy != null && !canOccupy(position)) return false;
     return _applyEdit(() => _boardSession.eraseCell(position));
   }
 

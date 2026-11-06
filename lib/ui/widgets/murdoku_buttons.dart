@@ -10,6 +10,7 @@ class MurdokuToolButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     required this.typography,
+    this.subtitle,
     this.iconAsset,
     this.fallbackIcon,
     this.showLabel = true,
@@ -17,6 +18,7 @@ class MurdokuToolButton extends StatelessWidget {
   });
 
   final String label;
+  final String? subtitle;
   final VoidCallback? onPressed;
   final MurdokuTypography typography;
   final String? iconAsset;
@@ -34,29 +36,55 @@ class MurdokuToolButton extends StatelessWidget {
             excludeFromSemantics: true,
           )
         : Icon(fallbackIcon ?? Icons.circle_outlined, size: 24);
+    final hasIcon = iconAsset != null || fallbackIcon != null;
     final content = showLabel
         ? Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (iconAsset != null || fallbackIcon != null) ...[
-                icon,
-                const SizedBox(width: 4),
-              ],
+              if (hasIcon) ...[icon, const SizedBox(width: 4)],
               Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: typography.body,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 2,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: typography.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (subtitle != null)
+                        Text(
+                          subtitle!,
+                          maxLines: 2,
+                          softWrap: true,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: typography.body.copyWith(
+                            fontSize: (typography.baseSize - 2)
+                                .clamp(6, 20)
+                                .toDouble(),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ],
           )
         : icon;
 
+    final tooltip =
+        '${label.replaceAll('\n', ' ')}${subtitle == null ? '' : ' — $subtitle'}';
     return Tooltip(
-      message: label,
+      message: tooltip,
       child: SizedBox(
         height: MurdokuTokens.minTouchSize,
         width: showLabel ? double.infinity : MurdokuTokens.minTouchSize,
@@ -65,11 +93,18 @@ class MurdokuToolButton extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.square(MurdokuTokens.minTouchSize),
             padding: showLabel
-                ? const EdgeInsets.symmetric(horizontal: 4)
+                ? const EdgeInsets.symmetric(horizontal: 4, vertical: 2)
                 : EdgeInsets.zero,
-            backgroundColor: MurdokuTokens.toolSurface,
-            disabledBackgroundColor: MurdokuTokens.toolSurface,
-            side: const BorderSide(color: MurdokuTokens.toolOutline, width: 2),
+            backgroundColor: selected && onPressed != null
+                ? MurdokuTokens.characterCard
+                : MurdokuTokens.toolSurface,
+            disabledBackgroundColor: const Color(0xFF585762),
+            side: BorderSide(
+              color: selected && onPressed != null
+                  ? MurdokuTokens.selected
+                  : MurdokuTokens.toolOutline,
+              width: 2,
+            ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(MurdokuTokens.cardRadius),
             ),
@@ -86,10 +121,12 @@ class MurdokuSubmitButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     required this.typography,
+    this.isSolved = false,
   });
 
   final VoidCallback? onPressed;
   final MurdokuTypography typography;
+  final bool isSolved;
 
   @override
   Widget build(BuildContext context) {
@@ -101,13 +138,20 @@ class MurdokuSubmitButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           minimumSize: const Size.square(MurdokuTokens.minTouchSize),
           backgroundColor: MurdokuTokens.toolSurface,
-          disabledBackgroundColor: MurdokuTokens.toolSurface,
+          disabledBackgroundColor: const Color(0xFF68686B),
+          disabledForegroundColor: const Color(0xFFB5B5B5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(MurdokuTokens.cardRadius),
             side: const BorderSide(color: MurdokuTokens.toolOutline),
           ),
         ),
-        child: Text('Submit', style: typography.body),
+        child: Text(
+          isSolved ? 'PLAY AGAIN' : 'SUBMIT',
+          style: typography.body.copyWith(
+            fontWeight: FontWeight.w700,
+            color: onPressed == null ? const Color(0xFFB5B5B5) : Colors.white,
+          ),
+        ),
       ),
     );
   }

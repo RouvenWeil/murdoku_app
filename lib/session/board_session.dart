@@ -49,9 +49,18 @@ class BoardSession {
     return _apply((board) => actions.toggleNote(board, position, characterId));
   }
 
-  bool placeCharacter(CellPosition position, String characterId) {
+  bool placeCharacter(
+    CellPosition position,
+    String characterId, {
+    bool Function(CellPosition)? canMark,
+  }) {
     return _apply(
-      (board) => actions.placeCharacter(board, position, characterId),
+      (board) => actions.placeCharacter(
+        board,
+        position,
+        characterId,
+        canMark: canMark,
+      ),
     );
   }
 

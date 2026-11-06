@@ -66,7 +66,7 @@ void main() {
     expect(find.byType(CluePanelStub), findsOneWidget);
     expect(find.byType(BoardViewportStub), findsOneWidget);
     expect(find.byType(ToolPanelStub), findsOneWidget);
-    expect(find.textContaining('Board preview'), findsOneWidget);
+    expect(find.byKey(const ValueKey('visible-board-region')), findsOneWidget);
     expect(find.text('Tools'), findsOneWidget);
     expect(find.text('Anthony'), findsOneWidget);
   });

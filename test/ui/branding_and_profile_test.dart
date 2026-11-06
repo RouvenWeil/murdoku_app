@@ -27,9 +27,9 @@ void main() {
       find.byKey(const ValueKey('character-portrait-frame-A')),
     );
     final border = (frame.decoration as BoxDecoration).border! as Border;
-    expect(border.left.width, MurdokuTokens.portraitBorderWidth);
-    expect(border.right.width, MurdokuTokens.portraitBorderWidth);
-    expect(border.top.width, MurdokuTokens.portraitBorderWidth);
+    expect(border.left.width, MurdokuTokens.borderWidth);
+    expect(border.right.width, MurdokuTokens.borderWidth);
+    expect(border.top.width, MurdokuTokens.borderWidth);
     expect(border.bottom.width, 0);
     expect(
       tester.getSize(find.byKey(const ValueKey('character-portrait-image-A'))),

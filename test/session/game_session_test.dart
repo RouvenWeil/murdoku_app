@@ -85,16 +85,19 @@ void main() {
   );
 
   group('WP-02 - Case-aware GameSession', () {
-    test('blocked objects and absent cells reject placement without history', () {
-      final game = GameSession.fromCase(sceneCase());
-      final before = game.board;
+    test(
+      'blocked objects and absent cells reject placement without history',
+      () {
+        final game = GameSession.fromCase(sceneCase());
+        final before = game.board;
 
-      expect(game.placeCharacter((row: 0, column: 2), 'A'), isFalse);
-      expect(game.placeCharacter((row: 2, column: 0), 'A'), isFalse);
-      expect(identical(game.board, before), isTrue);
-      expect(game.canUndo, isFalse);
-      expect(game.undoDepth, 0);
-    });
+        expect(game.placeCharacter((row: 0, column: 2), 'A'), isFalse);
+        expect(game.placeCharacter((row: 2, column: 0), 'A'), isFalse);
+        expect(identical(game.board, before), isTrue);
+        expect(game.canUndo, isFalse);
+        expect(game.undoDepth, 0);
+      },
+    );
 
     test('unknown characters do not create invalid case placements', () {
       final game = GameSession.fromCase(sceneCase());

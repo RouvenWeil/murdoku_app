@@ -17,6 +17,7 @@ class CluePanelStub extends StatelessWidget {
     required this.pinnedClueId,
     required this.onPinClue,
     required this.onBack,
+    this.placedCharacterIds = const {},
   });
 
   final CaseDefinition caseData;
@@ -25,6 +26,7 @@ class CluePanelStub extends StatelessWidget {
   final String? pinnedClueId;
   final ValueChanged<String> onPinClue;
   final VoidCallback onBack;
+  final Set<String> placedCharacterIds;
 
   static String generalId(int index) => 'general:$index';
   static String characterId(String id) => 'character:$id';
@@ -54,7 +56,7 @@ class CluePanelStub extends StatelessWidget {
     MurdokuTypography typography,
   ) {
     final id = characterId(character.id);
-    return CharacterClueCard(
+    final card = CharacterClueCard(
       key: ValueKey('clue-$id'),
       character: character,
       typography: typography,
@@ -64,6 +66,9 @@ class CluePanelStub extends StatelessWidget {
       onSelect: () => onCharacterSelected(character.id),
       onPin: () => onPinClue(id),
     );
+    return placedCharacterIds.contains(character.id)
+        ? Opacity(opacity: 0.65, child: card)
+        : card;
   }
 
   Widget? _pinnedCard(MurdokuTypography typography) {
@@ -142,29 +147,31 @@ class CluePanelStub extends StatelessWidget {
               final pinned = _pinnedCard(typography);
               return Column(
                 children: [
-                  if (pinned != null) ...[
+                  if (pinned != null)
                     ConstrainedBox(
                       constraints: BoxConstraints(
                         maxHeight: constraints.maxHeight * 0.55,
                       ),
                       child: SingleChildScrollView(
                         key: const ValueKey('pinned-clue-region'),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: MurdokuTokens.panelInset,
-                          vertical: 4,
+                        padding: const EdgeInsets.fromLTRB(
+                          MurdokuTokens.panelInset,
+                          4,
+                          MurdokuTokens.panelInset,
+                          0,
                         ),
                         child: pinned,
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsetsGeometry.symmetric(horizontal: 8),
-                      child: const Divider(height: 1),
+                  if (pinned != null)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Divider(height: 1),
                     ),
-                  ],
                   Expanded(
                     child: ListView(
                       key: const ValueKey('unpinned-clue-list'),
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
                       children: [
                         if (caseData.generalClues.isNotEmpty) ...[
                           for (var i = 0; i < caseData.generalClues.length; i++)
@@ -173,7 +180,12 @@ class CluePanelStub extends StatelessWidget {
                           const SizedBox(height: 8),
                         ],
                         for (final character in caseData.characters)
-                          if (pinnedClueId != characterId(character.id))
+                          if (!placedCharacterIds.contains(character.id) &&
+                              pinnedClueId != characterId(character.id))
+                            _characterCard(character, typography),
+                        for (final character in caseData.characters)
+                          if (placedCharacterIds.contains(character.id) &&
+                              pinnedClueId != characterId(character.id))
                             _characterCard(character, typography),
                       ],
                     ),

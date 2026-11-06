@@ -12,7 +12,7 @@ class BoardMarkText extends StatelessWidget {
     final outline = Paint()
       ..color = Colors.black
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
+      ..strokeWidth = 4;
     return Semantics(
       label: value,
       child: ExcludeSemantics(
